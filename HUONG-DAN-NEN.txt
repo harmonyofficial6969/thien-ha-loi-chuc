@@ -1,0 +1,22 @@
+NỀN SẢNH — ĐẶT TÊN ĐƠN GIẢN
+============================
+
+File trong thư mục media/:
+  manhinh1.mp4  = nền thứ 1
+  manhinh2.mp4  = nền thứ 2
+  manhinh3.mp4  = nền thứ 3
+
+ĐỔI NỀN:
+  Upload đè file cùng tên (vd manhinh1.mp4) lên GitHub.
+
+THÊM NỀN (vd nền 4):
+  1) Thêm file media/manhinh4.mp4
+  2) Trong index.html, copy 1 block lobby-slide, sửa:
+       data-slide="3"
+       id="lobby-video-3"
+       src="media/manhinh4.mp4"
+  3) Commit
+
+XÓA NỀN:
+  Xóa block slide tương ứng + (tuỳ chọn) xóa file mp4.
+  Đánh lại data-slide cho liên tục 0,1,2...
