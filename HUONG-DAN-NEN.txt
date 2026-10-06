@@ -9,12 +9,14 @@ File trong thư mục media/:
 ĐỔI NỀN:
   Upload đè file cùng tên (vd manhinh1.mp4) lên GitHub.
 
-THÊM NỀN (vd nền 4):
-  1) Thêm file media/manhinh4.mp4
-  2) Trong index.html, copy 1 block lobby-slide, sửa:
-       data-slide="3"
-       id="lobby-video-3"
-       src="media/manhinh4.mp4"
+THÊM NỀN (vd nền 5):
+  1) Thêm file media/manhinh5.mp4
+  2) 
+  <div class="lobby-slide" data-slide="5" data-type="video">
+    <video class="lobby-bg-video" muted loop playsinline preload="metadata">
+      <source src="media/manhinh5.mp4" type="video/mp4" />
+    </video>
+  </div>
   3) Commit
 
 XÓA NỀN:
