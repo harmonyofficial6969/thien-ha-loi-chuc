@@ -2217,8 +2217,8 @@
   <div id="modal-wish" class="modal-overlay">
     <div class="wish-card">
       <button class="btn-close-modal" data-close="modal-wish">×</button>
-      <div class="wish-title">✨ Gửi lời chúc vào Thiên Hà</div>
-      <p class="wish-sub">Lời chúc được lưu trong thiên hà (xem qua 💌)</p>
+      <div class="wish-title">✨ Gửi lời chúc</div>
+      <p class="wish-sub">Mặc định bay quanh Mặt Trời · Tick 🌍 để bay quanh Trái Đất như vệ tinh</p>
 
       <div class="form-item">
         <label class="form-label">Lời chúc của bạn *</label>
@@ -2234,8 +2234,8 @@
       <div class="wish-target-row" id="wish-target-row">
         <input type="checkbox" id="input-wish-to-earth" />
         <label for="input-wish-to-earth">
-          🌍 Gửi xuống quỹ đạo Trái Đất
-          <span class="hint">Lời chúc sẽ bay quanh Trái Đất thay vì bay tự do trong thiên hà</span>
+          🌍 Bay quanh Trái Đất (cỡ vệ tinh)
+          <span class="hint">Không tick = bay trong thiên hà · Bấm icon trên bầu trời để đọc lại</span>
         </label>
       </div>
 
@@ -2542,7 +2542,7 @@
 
     // ========== THREE.JS SETUP ==========
     let scene, camera, renderer, clock;
-    let stars, sun, moon, wishSprites = []; // icon dễ thương (không còn text lời chúc)
+    let stars, sun, moon, wishSprites = []; // sprite chữ lời chúc (galaxy + earth)
     let asteroids = [];     // thiên thạch
     let spaceDust = null;   // bụi vũ trụ (Points)
     let impactFX = [];      // hạt va chạm thiên thạch
@@ -4679,61 +4679,202 @@
       return sprite;
     }
 
-    /** Sprite lời chúc bay quanh quỹ đạo thấp của Trái Đất */
-    function createEarthWishSprite(wish) {
-      const icon = ICONS[Math.floor(Math.random() * ICONS.length)] || '✨';
+    /**
+     * Vẽ texture chữ lời chúc (không dùng icon)
+     * style: 'galaxy' | 'earth'
+     */
+    function makeWishTextTexture(rawText, style, authorName) {
+      const full = String(rawText || '…').trim() || '…';
+      const isEarth = style === 'earth';
+      const author = String(authorName || '').trim().slice(0, 30);
+      // Hiện đủ nội dung lời chúc (form maxlength 80)
+      let body = full;
+
+      const padX = isEarth ? 12 : 20;
+      const padY = isEarth ? 8 : 14;
+      const fontSize = isEarth ? 16 : 26;
+      const authorSize = isEarth ? 13 : 18;
+      const lineH = isEarth ? 20 : 32;
+      const authorH = author ? (isEarth ? 16 : 24) : 0;
+      const maxW = isEarth ? 240 : 360;
+
       const c = document.createElement('canvas');
-      c.width = 96; c.height = 96;
       const cx = c.getContext('2d');
-      // Glow nhẹ
-      cx.beginPath();
-      cx.arc(48, 48, 38, 0, Math.PI * 2);
-      cx.fillStyle = 'rgba(56,189,248,0.25)';
-      cx.fill();
-      cx.font = '52px serif';
+      cx.font = '700 ' + fontSize + 'px Quicksand, "Segoe UI", system-ui, sans-serif';
+
+      const words = body.split(/\s+/);
+      const lines = [];
+      let line = '';
+      for (let i = 0; i < words.length; i++) {
+        const test = line ? line + ' ' + words[i] : words[i];
+        if (cx.measureText(test).width > maxW && line) {
+          lines.push(line);
+          line = words[i];
+        } else {
+          line = test;
+        }
+      }
+      if (line) lines.push(line);
+      if (!lines.length) lines.push('…');
+      // Không cắt dòng — hiện hết nội dung
+
+      let contentW = 0;
+      lines.forEach((ln) => {
+        contentW = Math.max(contentW, cx.measureText(ln).width);
+      });
+      if (author) {
+        cx.font = '600 ' + authorSize + 'px Quicksand, "Segoe UI", system-ui, sans-serif';
+        contentW = Math.max(contentW, cx.measureText('— ' + author).width);
+      }
+      const gapAuthor = author ? (isEarth ? 4 : 6) : 0;
+      const w = Math.ceil(contentW + padX * 2);
+      const h = Math.ceil(lines.length * lineH + padY * 2 + authorH + gapAuthor);
+      c.width = w;
+      c.height = h;
+
+      const r = isEarth ? 10 : 14;
+      cx.clearRect(0, 0, w, h);
+      const rr = (x, y, ww, hh, rad) => {
+        const rd = Math.min(rad, ww / 2, hh / 2);
+        cx.beginPath();
+        cx.moveTo(x + rd, y);
+        cx.arcTo(x + ww, y, x + ww, y + hh, rd);
+        cx.arcTo(x + ww, y + hh, x, y + hh, rd);
+        cx.arcTo(x, y + hh, x, y, rd);
+        cx.arcTo(x, y, x + ww, y, rd);
+        cx.closePath();
+      };
+      rr(0.5, 0.5, w - 1, h - 1, r);
+      if (isEarth) {
+        cx.fillStyle = 'rgba(8, 24, 48, 0.9)';
+        cx.fill();
+        cx.strokeStyle = 'rgba(125, 211, 252, 0.85)';
+        cx.lineWidth = 2;
+        cx.stroke();
+      } else {
+        cx.fillStyle = 'rgba(12, 10, 28, 0.92)';
+        cx.fill();
+        cx.strokeStyle = 'rgba(250, 204, 21, 0.75)';
+        cx.lineWidth = 2;
+        cx.stroke();
+      }
+
+      // Nội dung lời chúc
+      cx.font = '700 ' + fontSize + 'px Quicksand, "Segoe UI", system-ui, sans-serif';
       cx.textAlign = 'center';
       cx.textBaseline = 'middle';
-      cx.fillText(icon, 48, 52);
+      cx.fillStyle = isEarth ? '#e0f2fe' : '#fef9c3';
+      const startY = padY + lineH / 2;
+      lines.forEach((ln, i) => {
+        cx.fillText(ln, w / 2, startY + i * lineH);
+      });
+
+      // Tên người gửi
+      if (author) {
+        const ay = padY + lines.length * lineH + gapAuthor + authorH / 2;
+        cx.font = '600 ' + authorSize + 'px Quicksand, "Segoe UI", system-ui, sans-serif';
+        cx.fillStyle = isEarth ? 'rgba(186, 230, 253, 0.9)' : 'rgba(253, 224, 71, 0.9)';
+        cx.fillText('— ' + author, w / 2, ay);
+      }
+
       const tex = new THREE.CanvasTexture(c);
+      tex.needsUpdate = true;
+      if (tex.minFilter !== undefined) tex.minFilter = THREE.LinearFilter;
+      return { tex: tex, aspect: w / h, width: w, height: h };
+    }
+
+    /**
+     * Sprite chữ lời chúc bay quanh Trái Đất — cỡ vệ tinh
+     */
+    function createEarthWishSprite(wish) {
+      if (!scene) return null;
+      const { tex, aspect } = makeWishTextTexture((wish && wish.text) || '…', 'earth', wish && wish.author);
       const mat = new THREE.SpriteMaterial({
         map: tex,
         transparent: true,
         depthWrite: false,
-        opacity: 0.95,
-        blending: THREE.AdditiveBlending
+        opacity: 0.92,
+        sizeAttenuation: true
       });
       const sprite = new THREE.Sprite(mat);
-      const sc = 2.4 + Math.random() * 1.6;
-      sprite.scale.set(sc, sc, 1);
+      // Cỡ đủ đọc full text khi zoom Earth (vẫn nhỏ hơn hành tinh)
+      const h = 0.22 + Math.min(0.18, (aspect > 1 ? 0.08 : 0.12) * Math.max(1, aspect * 0.15));
+      const w = h * aspect;
+      sprite.scale.set(w, h, 1);
 
-      // Quỹ đạo thấp quanh Trái Đất (bán kính ~ 4.5–7.5)
-      const orbitRadius = 4.6 + Math.random() * 3.2;
+      const R = (earthPlanet && earthPlanet.mesh && earthPlanet.mesh.userData.earthRadius)
+        ? earthPlanet.mesh.userData.earthRadius
+        : 2.35;
+      const orbitRadius = R * (1.14 + Math.random() * 0.28);
       const orbitAngle = Math.random() * Math.PI * 2;
       sprite.userData = {
         kind: 'earth-wish',
-        wishId: wish.id,
+        wishId: wish && wish.id,
         earthOrbit: true,
         orbitRadius,
         orbitAngle,
-        orbitSpeed: 0.08 + Math.random() * 0.12,
+        orbitSpeed: 0.10 + Math.random() * 0.14,
         height: 0,
-        floatAmp: 0.35 + Math.random() * 0.55,
+        floatAmp: 0.02 + Math.random() * 0.04,
         floatPhase: Math.random() * Math.PI * 2,
-        floatSpeed: 0.4 + Math.random() * 0.6,
-        inclination: 0.15 + Math.random() * 0.35
+        floatSpeed: 0.5 + Math.random() * 0.5,
+        inclination: 0.12 + Math.random() * 0.45,
+        baseScale: h
       };
       scene.add(sprite);
       wishSprites.push(sprite);
       return sprite;
     }
 
-    /** Khôi phục sprite lời chúc Trái Đất từ data đã lưu */
+    /**
+     * Sprite chữ lời chúc bay quanh Mặt Trời (thiên hà)
+     */
+    function createGalaxyWishSprite(wish) {
+      if (!scene) return null;
+      const { tex, aspect } = makeWishTextTexture((wish && wish.text) || '…', 'galaxy', wish && wish.author);
+      const mat = new THREE.SpriteMaterial({
+        map: tex,
+        transparent: true,
+        depthWrite: false,
+        opacity: 0.92
+      });
+      const sprite = new THREE.Sprite(mat);
+      const h = 3.2 + Math.random() * 1.6;
+      const w = h * aspect;
+      sprite.scale.set(w, h, 1);
+
+      const orbitRadius = 36 + Math.random() * 95;
+      const orbitAngle = Math.random() * Math.PI * 2;
+      const height = (Math.random() - 0.5) * 48;
+      sprite.position.set(
+        Math.cos(orbitAngle) * orbitRadius,
+        height,
+        Math.sin(orbitAngle) * orbitRadius
+      );
+      sprite.userData = {
+        kind: 'galaxy-wish',
+        wishId: wish && wish.id,
+        earthOrbit: false,
+        orbitRadius,
+        orbitAngle,
+        orbitSpeed: 0.03 + Math.random() * 0.06,
+        height,
+        floatAmp: 1.0 + Math.random() * 2.2,
+        floatPhase: Math.random() * Math.PI * 2,
+        floatSpeed: 0.25 + Math.random() * 0.5
+      };
+      scene.add(sprite);
+      wishSprites.push(sprite);
+      return sprite;
+    }
+
+    /** Khôi phục sprite lời chúc (galaxy + earth) từ data đã lưu */
     function restoreEarthWishSprites() {
-      if (!currentWishes || !currentWishes.length) return;
+      if (!currentWishes || !currentWishes.length || !scene) return;
       currentWishes.forEach((w) => {
-        if (w && w.target === 'earth') {
-          createEarthWishSprite(w);
-        }
+        if (!w) return;
+        if (w.target === 'earth') createEarthWishSprite(w);
+        else createGalaxyWishSprite(w); // galaxy hoặc thiếu target
       });
       updateEarthPanelStats();
     }
@@ -5095,9 +5236,10 @@
       updateWishCountUI();
       updateEarthPanelStats();
 
-      // Nếu gửi xuống Trái Đất → tạo sprite bay quanh quỹ đạo thấp
-      if (toEarth && scene) {
-        createEarthWishSprite(newWish);
+      // Tạo sprite ngay (galaxy quanh Mặt Trời / earth quanh Trái Đất)
+      if (scene) {
+        if (toEarth) createEarthWishSprite(newWish);
+        else createGalaxyWishSprite(newWish);
       }
       return true;
     }
@@ -5358,6 +5500,21 @@
         pointer.x = ((clientX - canvasRect.left) / w) * 2 - 1;
         pointer.y = -((clientY - canvasRect.top) / h) * 2 + 1;
         raycaster.setFromCamera(pointer, camera);
+
+        // Ưu tiên click lời chúc (sprite) → mở thư
+        if (wishSprites && wishSprites.length) {
+          const wishHits = raycaster.intersectObjects(wishSprites, false);
+          if (wishHits.length) {
+            const wud = wishHits[0].object.userData || {};
+            if (wud.wishId) {
+              const wish = (currentWishes || []).find((x) => x && x.id === wud.wishId);
+              if (wish && typeof openWishLetter === 'function') {
+                openWishLetter(wish);
+                return true;
+              }
+            }
+          }
+        }
 
         const bodies = focusableBodiesCache || rebuildFocusableBodies();
         const hits = raycaster.intersectObjects(bodies, true);
@@ -5764,6 +5921,10 @@
           s.position.z = Math.sin(ud.orbitAngle) * r;
         }
         if (doBillboard) s.lookAt(camera.position);
+        // Opacity dao động nhẹ theo thời gian
+        if (s.material && (ud.kind === 'earth-wish' || ud.kind === 'galaxy-wish')) {
+          s.material.opacity = 0.78 + 0.18 * Math.sin(t * 1.6 + (ud.floatPhase || 0));
+        }
       }
 
       // Thiên thạch – quỹ đạo + tự quay + flash
