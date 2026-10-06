@@ -2076,18 +2076,24 @@
   <!-- Sảnh chờ — Video cánh đồng hoa hoàng hôn — FSM: LOBBY -->
   <div id="loader" class="loader-overlay" role="dialog" aria-label="Sảnh chờ Thiên Hà">
     <div class="lobby-slides" id="lobby-slides" aria-hidden="true">
-      <div class="lobby-slide active" data-slide="0" data-type="video">
-        <video id="lobby-video-0" class="lobby-bg-video" muted loop playsinline autoplay preload="auto">
+      <!--
+        Thứ tự nền sảnh: 1 → 2 → 3 → …
+        Thêm nền: copy block, tăng data-slide, đổi file trong media/
+        Video: data-type="video" + <video><source src="media/....mp4">
+        Ảnh:  data-type="image" + class is-image + style background-image
+      -->
+      <div class="lobby-slide active" data-slide="1" data-type="video">
+        <video id="lobby-video-1" class="lobby-bg-video" muted loop playsinline autoplay preload="auto">
           <source src="media/manhinh1.mp4" type="video/mp4" />
-        </video>
-      </div>
-      <div class="lobby-slide" data-slide="1" data-type="video">
-        <video id="lobby-video-1" class="lobby-bg-video" muted loop playsinline preload="metadata">
-          <source src="media/manhinh2.mp4" type="video/mp4" />
         </video>
       </div>
       <div class="lobby-slide" data-slide="2" data-type="video">
         <video id="lobby-video-2" class="lobby-bg-video" muted loop playsinline preload="metadata">
+          <source src="media/manhinh2.mp4" type="video/mp4" />
+        </video>
+      </div>
+      <div class="lobby-slide" data-slide="3" data-type="video">
+        <video id="lobby-video-3" class="lobby-bg-video" muted loop playsinline preload="metadata">
           <source src="media/manhinh3.mp4" type="video/mp4" />
         </video>
       </div>
@@ -6205,10 +6211,13 @@
       host.style.display = '';
       // Chấm theo số slide HỢP LỆ (không tính slot trống)
       const activeValidPos = Math.max(0, lobbyValidIndices.indexOf(lobbySlideIndex));
+      const allSlides = getLobbySlides();
       host.innerHTML = lobbyValidIndices.map(function (slideIdx, pos) {
         const on = slideIdx === lobbySlideIndex ? ' active' : '';
+        const slideEl = allSlides[slideIdx];
+        const num = (slideEl && slideEl.getAttribute('data-slide')) || String(pos + 1);
         return '<button type="button" class="lobby-dot' + on + '" data-valid-pos="' + pos +
-          '" data-slide-idx="' + slideIdx + '" aria-label="Nền ' + (pos + 1) + '"></button>';
+          '" data-slide-idx="' + slideIdx + '" aria-label="Nền ' + num + '"></button>';
       }).join('');
       host.querySelectorAll('[data-slide-idx]').forEach(function (btn) {
         btn.addEventListener('click', function (e) {
@@ -6465,26 +6474,17 @@
     }
 
     function restartLobbyVideo() {
-      const lv = document.getElementById('lobby-video');
-      if (lv) {
-        try {
-          if (!lv.querySelector('source') && !lv.src) {
-            const s = document.createElement('source');
-            s.src = 'media/manhinh3.mp4';
-            s.type = 'video/mp4';
-            lv.appendChild(s);
-            lv.load();
-          }
-        } catch (e) { }
+      // Quay sảnh: phát lại slide nền hiện tại (ảnh hoặc video)
+      if (typeof goLobbySlide === 'function') {
+        goLobbySlide(typeof lobbySlideIndex === 'number' ? lobbySlideIndex : 0);
       }
-      // Giữ slide đang chọn
-      if (typeof goLobbySlide === 'function') goLobbySlide(lobbySlideIndex || 0);
     }
 
     function pauseLobbyVideo() {
-      const lv = document.getElementById('lobby-video');
-      if (!lv) return;
-      try { lv.pause(); } catch (e) { }
+      // Dừng mọi video nền sảnh khi vào thiên hà
+      document.querySelectorAll('#lobby-slides video').forEach(function (v) {
+        try { v.pause(); } catch (e) { }
+      });
     }
 
     function enterGalaxyFromLobby() {
