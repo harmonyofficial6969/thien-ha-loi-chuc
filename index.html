@@ -9,10 +9,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#000003" />
-  <title>Thiên Hà Lời Chúc · Trái Đất sống</title>
+  <title>Thiên Hà Lời Chúc · Hố đen bẻ cong không gian</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Supabase JS (realtime wishes) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     :root {
       --bg-deep: #000003;
@@ -91,6 +93,36 @@
     body.theme-ember .btn-enter-galaxy {
       box-shadow: 0 0 28px var(--theme-glow), 0 8px 30px rgba(0,0,0,0.5);
     }
+
+    .cloud-status-pill {
+      margin-left: 6px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      letter-spacing: 0.02em;
+      background: rgba(100, 116, 139, 0.35);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      vertical-align: middle;
+    }
+    .cloud-status-pill[data-mode="live"] {
+      background: rgba(16, 185, 129, 0.25);
+      border-color: rgba(52, 211, 153, 0.55);
+      color: #6ee7b7;
+    }
+    .cloud-status-pill[data-mode="cloud"],
+    .cloud-status-pill[data-mode="sync"] {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: rgba(56, 189, 248, 0.45);
+      color: #7dd3fc;
+    }
+    .cloud-status-pill[data-mode="err"] {
+      background: rgba(248, 113, 113, 0.2);
+      border-color: rgba(248, 113, 113, 0.45);
+      color: #fca5a5;
+    }
+
     .theme-chip {
       display: inline-flex;
       align-items: center;
@@ -1843,6 +1875,103 @@
       transform: none;
     }
 
+
+    /* ===== Wish Manager (data control) ===== */
+    .wish-mgr-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid var(--glass-border);
+      border-radius: 22px;
+      padding: 22px 18px 18px;
+      max-width: 440px;
+      width: 94vw;
+      max-height: min(82vh, 640px);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.65);
+      transform: scale(0.94);
+      transition: transform 0.3s cubic-bezier(0.34,1.4,0.64,1);
+      text-align: left;
+    }
+    .modal-overlay.open .wish-mgr-card { transform: scale(1); }
+    .wish-mgr-title {
+      font-size: 1.15rem; font-weight: 700; color: #f8fafc;
+      text-align: center; margin-bottom: 4px;
+    }
+    .wish-mgr-sub {
+      font-size: 0.78rem; color: #94a3b8; text-align: center;
+      margin-bottom: 12px; line-height: 1.4;
+    }
+    .wish-mgr-toolbar {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-bottom: 10px; justify-content: center;
+    }
+    .wish-mgr-toolbar button {
+      font-family: inherit; font-size: 0.75rem; font-weight: 600;
+      padding: 7px 11px; border-radius: 10px; cursor: pointer;
+      border: 1px solid rgba(148,163,184,0.35);
+      background: rgba(255,255,255,0.06); color: #e2e8f0;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .wish-mgr-toolbar button:hover {
+      background: rgba(56,189,248,0.15); border-color: rgba(56,189,248,0.45);
+    }
+    .wish-mgr-toolbar button.danger {
+      border-color: rgba(248,113,113,0.4); color: #fecaca;
+    }
+    .wish-mgr-toolbar button.danger:hover {
+      background: rgba(185,28,28,0.35);
+    }
+    .wish-mgr-filters {
+      display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .wish-mgr-filters button {
+      font-family: inherit; font-size: 0.72rem; font-weight: 600;
+      padding: 5px 10px; border-radius: 999px; cursor: pointer;
+      border: 1px solid rgba(148,163,184,0.3);
+      background: transparent; color: #94a3b8;
+    }
+    .wish-mgr-filters button.active {
+      background: rgba(56,189,248,0.2); border-color: rgba(56,189,248,0.5); color: #7dd3fc;
+    }
+    .wish-mgr-list {
+      flex: 1; overflow-y: auto; min-height: 120px; max-height: 42vh;
+      border-radius: 12px; background: rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.08); padding: 6px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .wish-mgr-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 10px 10px; border-radius: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .wish-mgr-item:last-child { border-bottom: none; }
+    .wish-mgr-item .wm-body { flex: 1; min-width: 0; }
+    .wish-mgr-item .wm-text {
+      font-size: 0.84rem; color: #f1f5f9; line-height: 1.35;
+      word-break: break-word;
+    }
+    .wish-mgr-item .wm-meta {
+      font-size: 0.68rem; color: #64748b; margin-top: 4px;
+    }
+    .wish-mgr-item .wm-del {
+      flex-shrink: 0; width: 32px; height: 32px; border-radius: 8px;
+      border: 1px solid rgba(248,113,113,0.35);
+      background: rgba(127,29,29,0.3); color: #fca5a5;
+      cursor: pointer; font-size: 0.9rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .wish-mgr-item .wm-del:hover { background: rgba(185,28,28,0.55); }
+    .wish-mgr-item .wm-del:disabled { opacity: 0.3; cursor: not-allowed; }
+    .wish-mgr-empty {
+      padding: 24px; text-align: center; color: #64748b; font-size: 0.85rem;
+    }
+    .wish-mgr-foot {
+      margin-top: 10px; font-size: 0.7rem; color: #64748b;
+      text-align: center; line-height: 1.4;
+    }
+
     .wish-count-badge {
       font-size: 0.78rem;
       color: #a5f3fc;
@@ -2033,6 +2162,7 @@
     <header class="top-nav" id="top-nav" role="toolbar" aria-label="Công cụ thiên hà">
       <div class="galaxy-badge" id="galaxy-badge" data-tip="Thiên Hà Lời Chúc" aria-label="Thiên hà">
         <span id="galaxy-name-label">Thiên Hà</span>
+        <span id="cloud-status" class="cloud-status-pill" data-mode="local" title="Trạng thái đồng bộ">Local</span>
       </div>
       <button id="btn-planet-menu" class="btn-icon" data-tip="Menu hành tinh · Focus nhanh" aria-label="Hành tinh" aria-expanded="false" aria-controls="planet-menu-panel">🪐</button>
       <button id="btn-track-prev-nav" class="btn-icon" data-tip="Bài trước" aria-label="Bài trước">⏮</button>
@@ -2043,6 +2173,7 @@
       <button id="btn-track-next-nav" class="btn-icon" data-tip="Bài sau" aria-label="Bài sau">⏭</button>
       <button id="btn-change-music" class="btn-icon btn-music-change" data-tip="Thêm / Sửa nhạc" aria-label="Thay nhạc">🎧</button>
       <button id="btn-send-wish" class="btn-icon" data-tip="Gửi lời chúc vào thiên hà" aria-label="Gửi lời chúc">✨</button>
+      <button id="btn-wish-mgr" class="btn-icon" data-tip="Quản lý lời chúc · Xuất/Nhập" aria-label="Quản lý lời chúc">📋</button>
       <button id="btn-speed" class="btn-icon speed-btn" data-tip="Đổi tốc độ bay" aria-label="Tốc độ">
         <span class="speed-indicator">0.8×</span>
       </button>
@@ -2255,6 +2386,31 @@
     </div>
   </div>
 
+  <!-- Wish Manager modal -->
+  <div id="modal-wish-mgr" class="modal-overlay">
+    <div class="wish-mgr-card">
+      <button class="btn-close-modal" data-close="modal-wish-mgr">×</button>
+      <div class="wish-mgr-title">📋 Quản lý lời chúc</div>
+      <p class="wish-mgr-sub">Local + Cloud (Supabase nếu đã cấu hình) · Xuất JSON backup · Realtime giữa các máy</p>
+      <div class="wish-mgr-toolbar">
+        <button type="button" id="wm-export">⬇ Xuất JSON</button>
+        <button type="button" id="wm-import">⬆ Nhập JSON</button>
+        <button type="button" id="wm-merge-old">🔄 Gộp data cũ</button>
+        <button type="button" id="wm-clear-user" class="danger">Xóa lời user</button>
+      </div>
+      <input type="file" id="wm-import-file" accept="application/json,.json" style="display:none" />
+      <div class="wish-mgr-filters" id="wm-filters">
+        <button type="button" data-filter="all" class="active">Tất cả</button>
+        <button type="button" data-filter="user">Của bạn</button>
+        <button type="button" data-filter="default">Mặc định</button>
+        <button type="button" data-filter="earth">🌍 Trái Đất</button>
+        <button type="button" data-filter="galaxy">🌌 Thiên hà</button>
+      </div>
+      <div class="wish-mgr-list" id="wm-list"></div>
+      <div class="wish-mgr-foot" id="wm-foot">Store key: thienha_wish_store</div>
+    </div>
+  </div>
+
   <!-- Toast success -->
   <div id="toast-success" class="toast-success">Lời chúc đã bay vào thiên hà ✨</div>
 
@@ -2286,10 +2442,353 @@
 
     const DAILY_LIMIT = 3;
     const ICONS = ["⭐", "✨", "💫", "🌟", "🐰", "🌸", "💖", "🌙", "☄️", "🪐", "🦄", "🍭", "🎀", "🦋", "☁️", "🧸"];
-    // Storage 1 thiên hà cố định
-    const WISHES_KEY = 'thienha_wishes_v5_chinh';
-    const OLD_WISHES_KEY = 'thienha_wishes_v5';
-    const DAILY_LIMIT_KEY = 'thienha_daily_limit_v5_chinh';
+    // ===== WishStore — key ỔN ĐỊNH, không đổi theo version HTML =====
+    // Đổi file v5 → v27 → v28 vẫn đọc cùng kho trên cùng trình duyệt/origin.
+    const WISH_STORE_KEY = 'thienha_wish_store';
+    const WISH_STORE_VERSION = 1;
+    const DAILY_LIMIT_KEY = 'thienha_daily_limit_store';
+    // Legacy keys (migrate một lần)
+    const LEGACY_WISH_KEYS = [
+      'thienha_wishes_v5_chinh',
+      'thienha_wishes_v5',
+      'thienha_wishes_v5_global'
+    ];
+
+    // ========== SUPABASE CONFIG — BẮT BUỘC ĐIỀN ĐỂ CLOUD ==========
+    // Bước 1: https://supabase.com → New project (đợi xanh)
+    // Bước 2: SQL Editor → dán supabase-wishes-setup.sql → Run
+    // Bước 3: Settings → API → copy Project URL + anon public key
+    // Bước 4: Dán 2 giá trị vào 2 dòng dưới (giữ dấu nháy)
+    // Để trống = Local only (không chia sẻ giữa máy)
+    const SUPABASE_URL = 'https://nyzmouelglfthynhgjef.supabase.co/rest/v1/';        // 'https://xxxx.supabase.co'
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55em1vdWVsZ2xmdGh5bmhnamVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0NDQ0NTgsImV4cCI6MjEwNzAyMDQ1OH0.HV9QioCu4IZdu2gcny7TFZF7Gwmt4iPpmIXZ2kt6IQE';   // 'eyJhbGciOi...'
+    const CLOUD_TABLE = 'wishes';
+    const CLIENT_ID_KEY = 'thienha_client_id';
+
+    /**
+     * SafeStorage — tránh crash khi document sandbox / iframe chat
+     * (SecurityError: localStorage lacks allow-same-origin)
+     * Fallback: memory Map trong session tab.
+     */
+    const __memStore = new Map();
+    let __lsOk = null;
+    function canUseLocalStorage() {
+      if (__lsOk !== null) return __lsOk;
+      try {
+        const k = '__thienha_ls_probe__';
+        window.localStorage.setItem(k, '1');
+        window.localStorage.removeItem(k);
+        __lsOk = true;
+      } catch (e) {
+        __lsOk = false;
+        console.warn('[SafeStorage] localStorage bị chặn (sandbox/iframe). Dùng bộ nhớ tạm trong tab.');
+      }
+      return __lsOk;
+    }
+    const safeStorage = {
+      getItem: function (key) {
+        try {
+          if (canUseLocalStorage()) return window.safeStorage.getItem(key);
+        } catch (e) {}
+        return __memStore.has(key) ? __memStore.get(key) : null;
+      },
+      setItem: function (key, val) {
+        try {
+          if (canUseLocalStorage()) {
+            window.localStorage.setItem(key, val);
+            return;
+          }
+        } catch (e) {}
+        __memStore.set(key, String(val));
+      },
+      removeItem: function (key) {
+        try {
+          if (canUseLocalStorage()) window.localStorage.removeItem(key);
+        } catch (e) {}
+        __memStore.delete(key);
+      },
+      key: function (i) {
+        try {
+          if (canUseLocalStorage()) return window.safeStorage.key(i);
+        } catch (e) {}
+        return Array.from(__memStore.keys())[i] || null;
+      },
+      get length() {
+        try {
+          if (canUseLocalStorage()) return window.safeStorage.length;
+        } catch (e) {}
+        return __memStore.size;
+      }
+    };
+
+    let supabaseClient = null;
+    let cloudEnabled = false;
+    let cloudSyncing = false;
+    let realtimeChannel = null;
+
+    function getClientId() {
+      try {
+        let id = safeStorage.getItem(CLIENT_ID_KEY);
+        if (!id) {
+          id = 'c_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+          safeStorage.setItem(CLIENT_ID_KEY, id);
+        }
+        return id;
+      } catch (e) {
+        return 'c_anon';
+      }
+    }
+
+    function isCloudConfigured() {
+      return !!(SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_URL.indexOf('http') === 0);
+    }
+
+    function initSupabase() {
+      if (!isCloudConfigured()) {
+        cloudEnabled = false;
+        return false;
+      }
+      if (typeof supabase === 'undefined' || !supabase.createClient) {
+        console.warn('[WishCloud] supabase-js chưa load');
+        cloudEnabled = false;
+        return false;
+      }
+      try {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false }
+        });
+        cloudEnabled = true;
+        return true;
+      } catch (e) {
+        console.warn('[WishCloud] init lỗi', e);
+        cloudEnabled = false;
+        return false;
+      }
+    }
+
+    function rowToWish(row) {
+      if (!row) return null;
+      return normalizeWish({
+        id: row.id,
+        text: row.text,
+        author: row.author || '',
+        createdAt: row.created_at ? Number(row.created_at) : Date.now(),
+        target: row.target === 'earth' ? 'earth' : 'galaxy',
+        clientId: row.client_id || ''
+      });
+    }
+
+    function wishToRow(w) {
+      return {
+        id: w.id,
+        text: w.text,
+        author: w.author || '',
+        target: w.target === 'earth' ? 'earth' : 'galaxy',
+        created_at: w.createdAt || Date.now(),
+        client_id: w.clientId || getClientId()
+      };
+    }
+
+    async function fetchCloudWishes() {
+      if (!cloudEnabled || !supabaseClient) return null;
+      const { data, error } = await supabaseClient
+        .from(CLOUD_TABLE)
+        .select('id,text,author,target,created_at,client_id')
+        .order('created_at', { ascending: true })
+        .limit(500);
+      if (error) {
+        console.warn('[WishCloud] fetch', error.message || error);
+        return null;
+      }
+      return (data || []).map(rowToWish).filter(Boolean);
+    }
+
+    async function insertCloudWish(wish) {
+      if (!cloudEnabled || !supabaseClient || !wish) return { ok: false };
+      const row = wishToRow(wish);
+      const { data, error } = await supabaseClient.from(CLOUD_TABLE).insert(row).select().single();
+      if (error) {
+        console.warn('[WishCloud] insert', error.message || error);
+        return { ok: false, error: error.message };
+      }
+      return { ok: true, wish: rowToWish(data) };
+    }
+
+    async function deleteCloudWish(wishId) {
+      if (!cloudEnabled || !supabaseClient || !wishId) return false;
+      const { error } = await supabaseClient.from(CLOUD_TABLE).delete().eq('id', wishId);
+      if (error) {
+        console.warn('[WishCloud] delete', error.message || error);
+        return false;
+      }
+      return true;
+    }
+
+    function ensureWishSprite(wish) {
+      if (!wish || !wish.id || typeof scene === 'undefined' || !scene) return;
+      const exists = (wishSprites || []).some(function (s) {
+        return s.userData && s.userData.wishId === wish.id;
+      });
+      if (exists) return;
+      try {
+        if (wish.target === 'earth' && typeof createEarthWishSprite === 'function') {
+          createEarthWishSprite(wish);
+        } else if (typeof createGalaxyWishSprite === 'function') {
+          createGalaxyWishSprite(wish);
+        }
+      } catch (e) {
+        console.warn('[WishCloud] sprite', e);
+      }
+    }
+
+    function applyCloudWishLocally(wish, opts) {
+      opts = opts || {};
+      if (!wish || !wish.id) return;
+      const exists = (currentWishes || []).some(function (w) { return w && w.id === wish.id; });
+      if (exists) return;
+      currentWishes.push(wish);
+      try { saveWishes(currentWishes); } catch (e) {}
+      if (opts.sprite !== false) ensureWishSprite(wish);
+      if (typeof updateWishCountUI === 'function') updateWishCountUI();
+      if (typeof updateEarthPanelStats === 'function') updateEarthPanelStats();
+    }
+
+    function subscribeCloudWishes() {
+      if (!cloudEnabled || !supabaseClient) return;
+      try {
+        if (realtimeChannel) {
+          supabaseClient.removeChannel(realtimeChannel);
+          realtimeChannel = null;
+        }
+      } catch (e) {}
+      realtimeChannel = supabaseClient
+        .channel('wishes-realtime')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: CLOUD_TABLE
+        }, function (payload) {
+          const w = rowToWish(payload.new);
+          if (!w) return;
+          // Bỏ qua echo của chính mình (đã add optimistic)
+          if (w.clientId && w.clientId === getClientId()) {
+            // vẫn merge id nếu cần
+            applyCloudWishLocally(w, { sprite: true });
+            return;
+          }
+          applyCloudWishLocally(w, { sprite: true });
+          if (typeof showToast === 'function') {
+            showToast('Có lời chúc mới từ thiên hà ✨');
+          }
+        })
+        .on('postgres_changes', {
+          event: 'DELETE',
+          schema: 'public',
+          table: CLOUD_TABLE
+        }, function (payload) {
+          const id = payload.old && payload.old.id;
+          if (!id) return;
+          if (!(currentWishes || []).some(function (w) { return w && w.id === id; })) return;
+          // Xóa local + sprite (không gọi lại cloud)
+          currentWishes = currentWishes.filter(function (w) { return w.id !== id; });
+          try { saveWishes(currentWishes); } catch (e) {}
+          if (typeof scene !== 'undefined' && scene && wishSprites) {
+            const idx = wishSprites.findIndex(function (s) {
+              return s.userData && s.userData.wishId === id;
+            });
+            if (idx !== -1) {
+              const s = wishSprites[idx];
+              scene.remove(s);
+              if (s.material) {
+                if (s.material.map) s.material.map.dispose();
+                s.material.dispose();
+              }
+              wishSprites.splice(idx, 1);
+            }
+          }
+          if (typeof updateWishCountUI === 'function') updateWishCountUI();
+        })
+        .subscribe(function (status) {
+          console.log('[WishCloud] realtime', status);
+          updateCloudStatusUI(status);
+        });
+    }
+
+    function updateCloudStatusUI(status) {
+      const el = document.getElementById('cloud-status');
+      if (!el) return;
+      if (!isCloudConfigured()) {
+        el.textContent = 'Local';
+        el.title = 'Chưa cấu hình Supabase — lời chúc chỉ trên máy này';
+        el.dataset.mode = 'local';
+        return;
+      }
+      if (!cloudEnabled) {
+        el.textContent = 'Cloud lỗi';
+        el.dataset.mode = 'err';
+        return;
+      }
+      if (cloudSyncing) {
+        el.textContent = 'Đang đồng bộ…';
+        el.dataset.mode = 'sync';
+        return;
+      }
+      if (status === 'SUBSCRIBED') {
+        el.textContent = 'Cloud · Live';
+        el.dataset.mode = 'live';
+        el.title = 'Supabase realtime — mọi người cùng thấy lời chúc';
+        return;
+      }
+      el.textContent = 'Cloud';
+      el.dataset.mode = 'cloud';
+      el.title = 'Đã kết nối Supabase';
+    }
+
+    async function syncWishesFromCloud() {
+      if (!cloudEnabled) return;
+      cloudSyncing = true;
+      updateCloudStatusUI();
+      try {
+        const remote = await fetchCloudWishes();
+        if (!remote) return;
+        // Merge: cloud ưu tiên cho id trùng, giữ default local nếu cloud trống hoàn toàn
+        const defaults = (currentWishes || []).filter(function (w) {
+          return w && w.id && String(w.id).indexOf('d') === 0;
+        });
+        let merged = mergeWishLists(defaults, remote);
+        // Giữ user local chưa lên cloud (offline)
+        const remoteIds = {};
+        remote.forEach(function (w) { if (w && w.id) remoteIds[w.id] = true; });
+        (currentWishes || []).forEach(function (w) {
+          if (w && w.id && String(w.id).indexOf('u_') === 0 && !remoteIds[w.id]) {
+            merged = mergeWishLists(merged, [w]);
+          }
+        });
+        currentWishes = merged;
+        try { saveWishes(currentWishes); } catch (e) {}
+        // Sprites cho wish mới (khi scene đã có)
+        if (typeof scene !== 'undefined' && scene) {
+          currentWishes.forEach(function (w) {
+            if (w && String(w.id).indexOf('u_') === 0) ensureWishSprite(w);
+            if (w && w.target === 'earth') ensureWishSprite(w);
+          });
+        }
+        if (typeof updateWishCountUI === 'function') updateWishCountUI();
+        if (typeof updateEarthPanelStats === 'function') updateEarthPanelStats();
+        if (typeof renderWishManagerList === 'function') renderWishManagerList();
+      } finally {
+        cloudSyncing = false;
+        updateCloudStatusUI(realtimeChannel ? 'SUBSCRIBED' : '');
+      }
+    }
+
+    async function bootstrapWishCloud() {
+      initSupabase();
+      updateCloudStatusUI();
+      if (!cloudEnabled) return;
+      await syncWishesFromCloud();
+      subscribeCloudWishes();
+    }
 
     // ========== THEME THEO THIÊN HÀ ==========
     // Mỗi theme: fog, clear, ambient, lights, star tint, label UI
@@ -2419,40 +2918,126 @@
     currentTheme = THEME_PRESETS.golden;
     applyThemeToDOM(currentTheme);
 
-    /** Migrate data cũ → key cố định */
-    function migrateOldWishesIfNeeded() {
+    /**
+     * WishStore (Data layer) — tách khỏi version file
+     * Schema: { v, wishes: [{id,text,author,createdAt,target?}], updatedAt }
+     */
+    function normalizeWish(w) {
+      if (!w || typeof w !== 'object') return null;
+      const text = String(w.text || '').trim().slice(0, 120);
+      if (!text) return null;
+      const out = {
+        id: w.id || ('u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)),
+        text: text,
+        author: String(w.author || '').trim().slice(0, 40),
+        createdAt: typeof w.createdAt === 'number' ? w.createdAt : Date.now(),
+        target: w.target === 'earth' ? 'earth' : 'galaxy'
+      };
+      if (w.clientId) out.clientId = String(w.clientId);
+      return out;
+    }
+
+    function mergeWishLists(base, extra) {
+      const map = new Map();
+      (base || []).forEach(function (w) {
+        const n = normalizeWish(w);
+        if (n) map.set(n.id, n);
+      });
+      (extra || []).forEach(function (w) {
+        const n = normalizeWish(w);
+        if (n && !map.has(n.id)) map.set(n.id, n);
+      });
+      return Array.from(map.values());
+    }
+
+    function readStoreRaw() {
       try {
-        if (localStorage.getItem(WISHES_KEY)) return;
-        const oldRaw = localStorage.getItem(OLD_WISHES_KEY);
-        if (!oldRaw) return;
-        const parsed = JSON.parse(oldRaw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          localStorage.setItem(WISHES_KEY, oldRaw);
+        const raw = safeStorage.getItem(WISH_STORE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.wishes)) return parsed;
+        if (Array.isArray(parsed)) return { v: WISH_STORE_VERSION, wishes: parsed, updatedAt: Date.now() };
+      } catch (e) {}
+      return null;
+    }
+
+    function writeStore(wishes) {
+      const payload = {
+        v: WISH_STORE_VERSION,
+        wishes: (wishes || []).map(normalizeWish).filter(Boolean),
+        updatedAt: Date.now()
+      };
+      safeStorage.setItem(WISH_STORE_KEY, JSON.stringify(payload));
+      return payload;
+    }
+
+    /** Gộp mọi key legacy + multi-galaxy cũ vào store chính */
+    function migrateAllLegacyWishes() {
+      let merged = [];
+      const store = readStoreRaw();
+      if (store && store.wishes && store.wishes.length) {
+        merged = mergeWishLists(merged, store.wishes);
+      }
+      LEGACY_WISH_KEYS.forEach(function (key) {
+        try {
+          const raw = safeStorage.getItem(key);
+          if (!raw) return;
+          const parsed = JSON.parse(raw);
+          const list = Array.isArray(parsed) ? parsed : (parsed && parsed.wishes);
+          if (list && list.length) merged = mergeWishLists(merged, list);
+        } catch (e) {}
+      });
+      // Multi-galaxy keys: thienha_wishes_v5_*
+      try {
+        for (let i = 0; i < safeStorage.length; i++) {
+          const k = safeStorage.key(i);
+          if (!k || k === WISH_STORE_KEY) continue;
+          if (k.indexOf('thienha_wishes') === 0) {
+            try {
+              const raw = safeStorage.getItem(k);
+              const parsed = JSON.parse(raw);
+              const list = Array.isArray(parsed) ? parsed : (parsed && parsed.wishes);
+              if (list && list.length) merged = mergeWishLists(merged, list);
+            } catch (e2) {}
+          }
         }
       } catch (e) {}
+
+      if (!merged.length) {
+        // Lần đầu hoàn toàn trống → seed default (chỉ khi chưa có store)
+        if (!store) {
+          writeStore(DEFAULT_WISHES.map(normalizeWish));
+          return loadWishesFromStore();
+        }
+        return store.wishes.map(normalizeWish).filter(Boolean);
+      }
+      writeStore(merged);
+      return merged;
     }
-    migrateOldWishesIfNeeded();
+
+    function loadWishesFromStore() {
+      const store = readStoreRaw();
+      if (store && store.wishes && store.wishes.length) {
+        return store.wishes.map(normalizeWish).filter(Boolean);
+      }
+      return migrateAllLegacyWishes();
+    }
 
     function loadWishes() {
-      try {
-        const raw = localStorage.getItem(WISHES_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) return parsed;
-        }
-      } catch (e) {}
-      return [...DEFAULT_WISHES];
+      return loadWishesFromStore();
     }
 
     function saveWishes(list) {
       try {
-        localStorage.setItem(WISHES_KEY, JSON.stringify(list));
+        writeStore(list);
       } catch (e) {
-        console.warn('Không lưu được localStorage', e);
+        console.warn('Không lưu được WishStore', e);
+        throw e;
       }
     }
 
     let currentWishes = loadWishes();
+    let wishMgrFilter = 'all';
 
     function updateWishCountUI() {
       const el = document.getElementById('wish-count-text');
@@ -2475,7 +3060,7 @@
     }
     function getDailyCount() {
       try {
-        const raw = localStorage.getItem(DAILY_LIMIT_KEY);
+        const raw = safeStorage.getItem(DAILY_LIMIT_KEY);
         if (!raw) return 0;
         const data = JSON.parse(raw);
         if (data.date === getTodayKey()) return data.count || 0;
@@ -2484,7 +3069,7 @@
     }
     function incrementDailyCount() {
       const count = getDailyCount() + 1;
-      localStorage.setItem(DAILY_LIMIT_KEY, JSON.stringify({ date: getTodayKey(), count }));
+      safeStorage.setItem(DAILY_LIMIT_KEY, JSON.stringify({ date: getTodayKey(), count }));
       return count;
     }
     function canSendWishToday() {
@@ -2521,6 +3106,9 @@
       currentOpenWishId = null;
       closeModal('modal-letter');
       showToast('Đã xóa lời chúc 🗑️');
+      if (cloudEnabled) {
+        deleteCloudWish(wishId);
+      }
       return true;
     }
 
@@ -2561,6 +3149,14 @@
     let shootingStars = []; // sao băng
     let blackHoleRoot = null;   // hố đen ngoài hệ Mặt Trời
     let blackHoleMat = null;    // ShaderMaterial uniforms
+    // —— Gravitational Lensing (Visual layer – tách logic) ——
+    let lensRT = null;          // scene capture
+    let lensScene = null;
+    let lensCamera = null;
+    let lensMaterial = null;
+    let lensEnabled = true;     // tắt nếu GPU yếu
+    const LENS_TMP = new THREE.Vector3();
+    const LENS_NDC = new THREE.Vector3();
     let lastCollisionCheck = 0;
     let isDragging = false;
     let previousMouse = { x: 0, y: 0 };
@@ -5233,7 +5829,7 @@
       const BH_POS = new THREE.Vector3(BH_DIST * 0.78, BH_DIST * 0.05, -BH_DIST * 0.60);
       const EARTH_R = 2.35;
       const worldScale = EARTH_R; // shader r=1 → world
-      const N_STEPS = isMobile ? 48 : 72;
+      const N_STEPS = isMobile ? 56 : 88;
       const bhFocusDist = isMobile ? 11 : 13;
 
       const vert = [
@@ -5255,19 +5851,21 @@
         'uniform float uDiskPhase;',
         'uniform float uSize;',
         '',
-        'const float DISK_INNER = 1.80;',
-        'const float DISK_OUTER = 9.50;',
-        'const float DISK_INCL = 0.22;',  // gần nằm ngang (XZ)
-        'const float DISK_ROLL0 = 0.05;',
-        'const float DISK_OPACITY = 0.88;',
-        'const float DISK_TEMP = 5200.0;',
-        'const float DOPPLER_MIX = 0.72;',
-        'const float DISK_BEAM = 2.70;',
-        'const float DISK_SPEED = 5.20;',
-        'const float DISK_WIND = 6.80;',
-        'const float DISK_CONTRAST = 1.65;',
-        'const float EXPOSURE = 1.50;',
-        'const float DILATION_MIN = 0.22;',
+        'const float DISK_INNER = 1.75;',
+        'const float DISK_OUTER = 10.20;',
+        'const float DISK_INCL = 0.28;',  // nghiêng vừa — thấy Doppler 2 phía
+        'const float DISK_ROLL0 = 0.08;',
+        'const float DISK_OPACITY = 0.92;',
+        'const float DISK_TEMP = 7800.0;',  // inner hotter (K)
+        'const float DOPPLER_MIX = 0.82;',
+        'const float DISK_BEAM = 3.10;',
+        'const float DISK_SPEED = 4.60;',
+        'const float DISK_WIND = 7.40;',
+        'const float DISK_CONTRAST = 1.85;',
+        'const float EXPOSURE = 1.72;',
+        'const float DILATION_MIN = 0.18;',
+        'const float DISK_THICK = 0.065;',  // bề dày đĩa (scale r)
+
         'const int N_STEPS = __NSTEPS__;',
         '',
         'float hash21(vec2 p) {',
@@ -5339,13 +5937,14 @@
         '    if (r2 < 1.02) { captured = true; break; }',
         '    if (r2 > Zfar * Zfar) break;',
         '    float r = sqrt(r2);',
-        '    float dt = clamp(0.14 * r, 0.025, 1.6);',
-        '    vec3 a = -1.5 * h2 * x / (r2 * r2 * r + 1e-12);',
+        '    float dt = clamp(0.12 * r, 0.02, 1.45);',
+        // Schwarzschild light deflection (stronger = visible spacetime warp)
+        '    vec3 a = -1.62 * h2 * x / (r2 * r2 * r + 1e-12);',
         '    v += a * (0.5 * dt);',
         '    x += v * dt;',
         '    r2 = dot(x, x);',
         '    r = sqrt(max(r2, 1e-8));',
-        '    a = -1.5 * h2 * x / (r2 * r2 * r + 1e-12);',
+        '    a = -1.62 * h2 * x / (r2 * r2 * r + 1e-12);',
         '    v += a * (0.5 * dt);',
         '    float s = dot(x, n);',
         '    if (s * sPrev < 0.0 && trans > 0.012) {',
@@ -5353,29 +5952,46 @@
         '      vec3 xc = mix(xPrev, x, tc);',
         '      float rc = length(xc);',
         '      if (rc > rin && rc < rout) {',
-        '        float band = smoothstep(rin, rin * 1.22, rc)',
-        '                   * (1.0 - smoothstep(rout * 0.68, rout, rc));',
+        // Radial band: ISCO bright → outer fade
+        '        float band = smoothstep(rin, rin * 1.18, rc)',
+        '                   * (1.0 - smoothstep(rout * 0.62, rout, rc));',
+        // Vertical thin disk (Gaussian about midplane)
+        '        float hDisk = max(rc * DISK_THICK, 0.02);',
+        '        float vert = exp(-0.5 * (sPrev * sPrev) / (hDisk * hDisk));',
         '        float phi = atan(dot(xc, e2), dot(xc, e1));',
         '        float turns = phi / 6.28318530718;',
-        '        float kep = pow(rin / rc, 1.5);',
-        '        float gloc = sqrt(max(1.0 - 1.5 / rc, 0.02));',
-        '        float swirl = rc * DISK_WIND * 0.12',
+        '        float kep = pow(rin / max(rc, rin), 1.5);',
+        '        float gloc = sqrt(max(1.0 - 1.5 / max(rc, 1.05), 0.02));',
+        // Multi-arm spiral + turbulence
+        '        float swirl = rc * DISK_WIND * 0.11',
         '                    - uTime * kep * spd * gloc * dil * sdir',
-        '                    - uDiskPhase * 2.5;',
-        '        float streaks = vnoiseWrapY(vec2(rc * 2.8, turns * 19.0 + swirl * 3.0), 19.0) * 0.65',
-        '                      + vnoiseWrapY(vec2(rc * 1.0, turns * 9.0 + swirl * 1.5 + 7.0), 9.0) * 0.35;',
-        '        streaks = 0.30 + DISK_CONTRAST * streaks * streaks;',
+        '                    - uDiskPhase * 2.2;',
+        '        float n1 = vnoiseWrapY(vec2(rc * 3.2, turns * 22.0 + swirl * 3.2), 22.0);',
+        '        float n2 = vnoiseWrapY(vec2(rc * 1.15, turns * 11.0 + swirl * 1.6 + 5.0), 11.0);',
+        '        float n3 = vnoiseWrapY(vec2(rc * 0.55, turns * 5.0 + swirl * 0.7 + 13.0), 5.0);',
+        '        float streaks = n1 * 0.50 + n2 * 0.32 + n3 * 0.18;',
+        '        streaks = 0.22 + DISK_CONTRAST * streaks * streaks;',
+        // Spiral arms (2–3 arms)
+        '        float arms = 0.55 + 0.45 * pow(0.5 + 0.5 * sin(turns * 18.8496 + swirl * 0.85 + rc * 0.4), 2.0);',
+        '        streaks *= arms;',
+        // Keplerian Doppler beaming
         '        vec3 gasdir = normalize(cross(n, xc)) * sdir;',
         '        float beta = clamp(inversesqrt(max(2.0 * (rc - 1.0), 0.2)), 0.0, 0.99);',
         '        float gfac = gloc / max(1.0 + beta * dot(gasdir, normalize(v)), 0.05);',
         '        gfac = mix(1.0, gfac, DOPPLER_MIX);',
-        '        float xpr = max(1.0 - sqrt(rin / rc), 0.0);',
-        '        float tprof = pow(rin / rc, 0.75) * pow(xpr, 0.25) / 0.488;',
+        // Temperature profile: hot near ISCO
+        '        float xpr = max(1.0 - sqrt(rin / max(rc, rin)), 0.0);',
+        '        float tprof = pow(rin / max(rc, rin), 0.85) * pow(max(xpr, 0.001), 0.22) / 0.45;',
+        '        tprof = clamp(tprof, 0.12, 2.8);',
         '        vec3 cbb = blackbody(DISK_TEMP * tprof * gfac);',
-        '        float boost = pow(gfac, DISK_BEAM);',
-        '        float density = band * streaks;',
-        '        emitc += trans * cbb * (uDiskGain * 2.20 * density * tprof * tprof * boost);',
-        '        trans *= 1.0 - clamp(DISK_OPACITY * density, 0.0, 1.0);',
+        // Inner rim extra glow (photon-sphere adjacent)
+        '        float iscoGlow = smoothstep(rin * 1.35, rin, rc) * 1.35;',
+        '        cbb += vec3(1.0, 0.75, 0.45) * iscoGlow * 0.35;',
+        '        float boost = pow(max(gfac, 0.15), DISK_BEAM);',
+        '        float density = band * streaks * vert;',
+        '        density = clamp(density, 0.0, 1.8);',
+        '        emitc += trans * cbb * (uDiskGain * 2.55 * density * tprof * tprof * boost);',
+        '        trans *= 1.0 - clamp(DISK_OPACITY * density * 0.92, 0.0, 0.97);',
         '      }',
         '    }',
         '    sPrev = s;',
@@ -5386,12 +6002,20 @@
         '    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);',
         '    return;',
         '  }',
-        '  vec3 bg = vec3(0.0);',
         '  vec3 d = normalize(v);',
-        '  bg += stars(d) * uStarGain * 0.25;',
-        '  vec3 col = bg * trans + (vec3(1.0) - exp(-emitc * EXPOSURE));',
-        '  float alpha = clamp(length(emitc) * 2.2 + (1.0 - trans), 0.0, 1.0);',
-        '  if (alpha < 0.03) discard;',
+        // Lensed starfield + chromatic (space warp look)
+        '  vec3 bgR = stars(normalize(d + vec3(0.0015, 0.0, 0.0))) * uStarGain * 0.26;',
+        '  vec3 bgG = stars(d) * uStarGain * 0.26;',
+        '  vec3 bgB = stars(normalize(d - vec3(0.0015, 0.0, 0.0))) * uStarGain * 0.26;',
+        '  vec3 bg = vec3(bgR.r, bgG.g, bgB.b);',
+        // Einstein ring: photon-sphere caustic (r ~ 1.5–3.2 Schwarzschild)
+        '  float impact = length(cross(ro, rd));',
+        '  float einstein = smoothstep(2.55, 2.95, impact) * (1.0 - smoothstep(3.15, 3.55, impact));',
+        '  einstein *= 0.35 + 0.25 * sin(uTime * 0.5 + impact * 3.0);',
+        '  vec3 ringCol = vec3(1.0, 0.85, 0.62) * einstein * 0.55 * uDiskGain;',
+        '  vec3 col = bg * trans + (vec3(1.0) - exp(-emitc * EXPOSURE)) + ringCol * trans;',
+        '  float alpha = clamp(length(emitc) * 2.2 + (1.0 - trans) + einstein * 0.35, 0.0, 1.0);',
+        '  if (alpha < 0.025) discard;',
         '  gl_FragColor = vec4(col, alpha);',
         '}'
       ];
@@ -5402,7 +6026,7 @@
         uniforms: {
           uBHPos: { value: BH_POS.clone() },
           uTime: { value: 0 },
-          uDiskGain: { value: 1.6 },
+          uDiskGain: { value: 1.85 },
           uStarGain: { value: 0.55 },
           uDiskPhase: { value: 0 },
           uSize: { value: worldScale }
@@ -5480,6 +6104,176 @@
       return blackHoleRoot;
     }
 
+
+    /**
+     * GravitationalLensingPass — Visual only (MVC: Presentation)
+     * Lensing trọng lực nhẹ quanh VÀNH NGOÀI hố đen:
+     * 1) render scene → RT
+     * 2) UV bị kéo nhẹ về tâm (deflection ~ rim × 1/r) — không warp lõi / toàn màn
+     * Không đụng FSM / focus / data wishes.
+     */
+    function initGravitationalLensing() {
+      if (!renderer) return;
+      const w = Math.max(2, renderer.domElement.width || window.innerWidth);
+      const h = Math.max(2, renderer.domElement.height || window.innerHeight);
+      const scale = isMobile ? 0.45 : 0.65;
+      const rw = Math.max(2, Math.floor(w * scale));
+      const rh = Math.max(2, Math.floor(h * scale));
+      if (lensRT) {
+        try { lensRT.dispose(); } catch (e) {}
+      }
+      lensRT = new THREE.WebGLRenderTarget(rw, rh, {
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        format: THREE.RGBAFormat,
+        depthBuffer: true,
+        stencilBuffer: false
+      });
+      if (!lensCamera) lensCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      if (!lensScene) lensScene = new THREE.Scene();
+
+      const vert = [
+        'varying vec2 vUv;',
+        'void main() {',
+        '  vUv = uv;',
+        '  gl_Position = vec4(position.xy, 0.0, 1.0);',
+        '}'
+      ].join('\n');
+
+      const frag = [
+        'precision highp float;',
+        'uniform sampler2D tDiffuse;',
+        'uniform vec2 uBHScreen;',
+        'uniform float uRadius;',
+        'uniform float uStrength;',
+        'uniform float uEnabled;',
+        'varying vec2 vUv;',
+        'void main() {',
+        '  if (uEnabled < 0.5) {',
+        '    gl_FragColor = texture2D(tDiffuse, vUv);',
+        '    return;',
+        '  }',
+        '  vec2 delta = vUv - uBHScreen;',
+        '  float r = length(delta) / max(uRadius, 1e-4);',
+        // Ngoài vùng vành / trong lõi: không lensing
+        '  if (r < 0.78 || r > 1.55) {',
+        '    gl_FragColor = texture2D(tDiffuse, vUv);',
+        '    return;',
+        '  }',
+        // Mask vành ngoài (đỉnh ~ r=1.05–1.2)
+        '  float rim = smoothstep(0.78, 0.98, r) * (1.0 - smoothstep(1.22, 1.55, r));',
+        // Deflection kiểu lensing: nền bị kéo nhẹ VỀ phía tâm (hướng -radial)
+        // ~ 1/r falloff trong vành — giống ánh sáng bị uốn quanh khối lượng
+        '  float fall = 1.0 / (r * r + 0.35);',
+        '  float deflect = uStrength * rim * fall * 0.22;',
+        '  vec2 dir = delta / max(length(delta), 1e-5);',
+        '  vec2 uvW = vUv - dir * deflect * uRadius;',
+        // CA rất nhẹ trên vành
+        '  float ca = deflect * 0.25;',
+        '  float cr = texture2D(tDiffuse, uvW + dir * ca * 0.0025).r;',
+        '  float cg = texture2D(tDiffuse, uvW).g;',
+        '  float cb = texture2D(tDiffuse, uvW - dir * ca * 0.0025).b;',
+        '  vec3 col = vec3(cr, cg, cb);',
+        // Viền sáng mỏng (gợi Einstein ring), không át đĩa
+        '  col += vec3(1.0, 0.92, 0.75) * rim * uStrength * 0.06;',
+        '  gl_FragColor = vec4(col, 1.0);',
+        '}'
+      ].join('\n');
+
+      if (lensMaterial) {
+        try { lensMaterial.dispose(); } catch (e) {}
+      }
+      lensMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+          tDiffuse: { value: null },
+          uBHScreen: { value: new THREE.Vector2(0.5, 0.5) },
+          uRadius: { value: 0.12 },
+          uStrength: { value: isMobile ? 0.42 : 0.52 },
+          uEnabled: { value: 0 }
+        },
+        vertexShader: vert,
+        fragmentShader: frag,
+        depthTest: false,
+        depthWrite: false
+      });
+
+      if (lensScene.children.length) {
+        while (lensScene.children.length) lensScene.remove(lensScene.children[0]);
+      }
+      const geo = new THREE.PlaneBufferGeometry ? new THREE.PlaneBufferGeometry(2, 2) : new THREE.PlaneGeometry(2, 2);
+      const quad = new THREE.Mesh(geo, lensMaterial);
+      lensScene.add(quad);
+    }
+
+    function resizeGravitationalLensing() {
+      if (!renderer || !lensRT) return;
+      const w = Math.max(2, renderer.domElement.width || window.innerWidth);
+      const h = Math.max(2, renderer.domElement.height || window.innerHeight);
+      const scale = isMobile ? 0.45 : 0.65;
+      const rw = Math.max(2, Math.floor(w * scale));
+      const rh = Math.max(2, Math.floor(h * scale));
+      if (lensRT.width !== rw || lensRT.height !== rh) {
+        lensRT.setSize(rw, rh);
+      }
+    }
+
+    /** Project BH → UV [0,1], estimate screen radius, gate by visibility */
+    function updateLensingUniforms() {
+      if (!lensMaterial || !blackHoleRoot || !camera || !renderer) {
+        if (lensMaterial) lensMaterial.uniforms.uEnabled.value = 0;
+        return false;
+      }
+      blackHoleRoot.getWorldPosition(LENS_TMP);
+      LENS_NDC.copy(LENS_TMP).project(camera);
+      // behind camera / far outside frustum
+      if (LENS_NDC.z > 1.0 || LENS_NDC.z < -1.0) {
+        lensMaterial.uniforms.uEnabled.value = 0;
+        return false;
+      }
+      const uvx = LENS_NDC.x * 0.5 + 0.5;
+      const uvy = LENS_NDC.y * 0.5 + 0.5;
+      if (uvx < -0.35 || uvx > 1.35 || uvy < -0.35 || uvy > 1.35) {
+        lensMaterial.uniforms.uEnabled.value = 0;
+        return false;
+      }
+      // Screen radius from volume size at distance
+      const dist = camera.position.distanceTo(LENS_TMP);
+      const volR = (blackHoleRoot.userData && blackHoleRoot.userData.volume &&
+        blackHoleRoot.userData.volume.userData && blackHoleRoot.userData.volume.userData.volumeRadius) || 24;
+      const fov = camera.fov * Math.PI / 180;
+      const viewH = 2 * Math.tan(fov * 0.5) * Math.max(dist, 1);
+      const radiusUV = (volR * 1.22) / Math.max(viewH, 0.01); // bám vành volume
+      const radiusClamped = Math.min(0.32, Math.max(0.04, radiusUV));
+      // Fade strength when far
+      const strengthScale = THREE.MathUtils
+        ? THREE.MathUtils.clamp(180 / dist, 0.25, 1.0)
+        : Math.min(1, Math.max(0.25, 180 / dist));
+      lensMaterial.uniforms.uBHScreen.value.set(uvx, uvy);
+      lensMaterial.uniforms.uRadius.value = radiusClamped;
+      lensMaterial.uniforms.uStrength.value = (isMobile ? 0.42 : 0.52) * strengthScale;
+      lensMaterial.uniforms.uEnabled.value = lensEnabled ? 1 : 0;
+      return lensEnabled && radiusClamped > 0.035;
+    }
+
+    function renderFrameWithLensing() {
+      if (!renderer || !scene || !camera) return;
+      const useLens = lensRT && lensMaterial && lensScene && lensCamera && updateLensingUniforms();
+      if (!useLens) {
+        renderer.setRenderTarget(null);
+        renderer.render(scene, camera);
+        return;
+      }
+      // Pass 1: scene → RT
+      renderer.setRenderTarget(lensRT);
+      renderer.clear();
+      renderer.render(scene, camera);
+      // Pass 2: warp → screen
+      lensMaterial.uniforms.tDiffuse.value = lensRT.texture;
+      renderer.setRenderTarget(null);
+      renderer.render(lensScene, lensCamera);
+    }
+
+
     function createDecorations() {
       const iconsToUse = isMobile ? ICONS.slice(0, 10) : ICONS;
       // Nhân bản vài icon cho đầy không gian
@@ -5490,12 +6284,13 @@
       // Thiên thạch đã tắt
       createSpaceDust();
       createBlackHole();
+      try { initGravitationalLensing(); } catch (e) { console.warn('Lensing init', e); lensEnabled = false; }
       if (typeof rebuildFocusableBodies === 'function') rebuildFocusableBodies();
       // Khôi phục lời chúc đang bay quanh Trái Đất
       restoreEarthWishSprites();
     }
 
-    /** Thêm lời chúc mới (target: 'galaxy' | 'earth') */
+    /** Thêm lời chúc mới (target: 'galaxy' | 'earth') — local + cloud */
     function addWishToGalaxy(text, author, target) {
       const cleanText = (text || '').trim().slice(0, 80);
       if (!cleanText) return false;
@@ -5512,7 +6307,8 @@
         text: cleanText,
         author: (author || '').trim().slice(0, 30),
         createdAt: Date.now(),
-        target: toEarth ? 'earth' : 'galaxy'
+        target: toEarth ? 'earth' : 'galaxy',
+        clientId: getClientId()
       };
 
       currentWishes.push(newWish);
@@ -5527,10 +6323,18 @@
       updateWishCountUI();
       updateEarthPanelStats();
 
-      // Tạo sprite ngay (galaxy quanh Mặt Trời / earth quanh Trái Đất)
       if (scene) {
         if (toEarth) createEarthWishSprite(newWish);
         else createGalaxyWishSprite(newWish);
+      }
+
+      // Cloud async — không chặn UI
+      if (cloudEnabled) {
+        insertCloudWish(newWish).then(function (res) {
+          if (!res.ok) {
+            showToast('Đã lưu máy này · Cloud lỗi (kiểm tra Supabase)');
+          }
+        });
       }
       return true;
     }
@@ -5979,6 +6783,7 @@
         const dpr = window.devicePixelRatio || 1;
         renderer.setPixelRatio(Math.min(dpr, PERF.dprCap));
         renderer.setSize(w, h, false);
+        try { resizeGravitationalLensing(); } catch (e) {}
       }, 80);
     }
 
@@ -6253,7 +7058,7 @@
       // Hố đen: shader phase chậm + đồng bộ vị trí world
       if (blackHoleMat && blackHoleMat.uniforms) {
         blackHoleMat.uniforms.uTime.value = t;
-        blackHoleMat.uniforms.uDiskPhase.value = t * 0.12; // chậm hơn bản gốc
+        blackHoleMat.uniforms.uDiskPhase.value = t * 0.16; // accretion flow
         if (blackHoleRoot) {
           blackHoleRoot.getWorldPosition(blackHoleMat.uniforms.uBHPos.value);
         }
@@ -6355,7 +7160,13 @@
         showIdleHint();
       }
 
-      renderer.render(scene, camera);
+      // Presentation: gravitational lensing pass (không đụng logic)
+      try {
+        renderFrameWithLensing();
+      } catch (e) {
+        renderer.setRenderTarget(null);
+        renderer.render(scene, camera);
+      }
     }
 
     function showIdleHint() {
@@ -6971,6 +7782,15 @@
     // Khởi tạo phase sảnh
     setAppPhase('LOBBY');
 
+    // WishCloud: đồng bộ Supabase (nếu đã cấu hình URL + key)
+    try {
+      bootstrapWishCloud().catch(function (e) {
+        console.warn('[WishCloud] bootstrap', e);
+      });
+    } catch (e) {
+      console.warn('[WishCloud] bootstrap', e);
+    }
+
     // Audio toggle
     document.getElementById('btn-audio').addEventListener('click', toggleAudio);
     document.getElementById('audio-prompt').addEventListener('click', () => {
@@ -7240,7 +8060,7 @@
       }, true); // capture: đóng menu trước khi canvas nhận
 
       // Mở modal từ menu → đóng menu
-      ['btn-send-wish', 'btn-change-music'].forEach((id) => {
+      ['btn-send-wish', 'btn-change-music', 'btn-wish-mgr'].forEach((id) => {
         document.getElementById(id)?.addEventListener('click', () => {
           setMenuOpen(false);
         });
@@ -7380,6 +8200,205 @@
       if (!canSendWishToday()) {
         showToast('Hết ' + DAILY_LIMIT + ' lượt hôm nay 🌙');
       }
+    });
+
+
+    // ===== Wish Manager UI (control layer) =====
+    function isUserWishId(id) {
+      return id && String(id).indexOf('u_') === 0;
+    }
+
+    function getFilteredWishes() {
+      const f = wishMgrFilter || 'all';
+      return (currentWishes || []).filter(function (w) {
+        if (!w) return false;
+        if (f === 'user') return isUserWishId(w.id);
+        if (f === 'default') return !isUserWishId(w.id);
+        if (f === 'earth') return w.target === 'earth';
+        if (f === 'galaxy') return w.target !== 'earth';
+        return true;
+      });
+    }
+
+    function renderWishManagerList() {
+      const listEl = document.getElementById('wm-list');
+      const foot = document.getElementById('wm-foot');
+      if (!listEl) return;
+      const items = getFilteredWishes();
+      listEl.innerHTML = '';
+      if (!items.length) {
+        listEl.innerHTML = '<div class="wish-mgr-empty">Không có lời chúc trong bộ lọc này</div>';
+      } else {
+        items.forEach(function (w) {
+          const row = document.createElement('div');
+          row.className = 'wish-mgr-item';
+          const body = document.createElement('div');
+          body.className = 'wm-body';
+          const tx = document.createElement('div');
+          tx.className = 'wm-text';
+          tx.textContent = w.text || '';
+          const meta = document.createElement('div');
+          meta.className = 'wm-meta';
+          const kind = isUserWishId(w.id) ? 'User' : 'Mặc định';
+          const tgt = w.target === 'earth' ? '🌍 Trái Đất' : '🌌 Thiên hà';
+          const who = w.author ? (' · ' + w.author) : '';
+          meta.textContent = kind + ' · ' + tgt + who;
+          body.appendChild(tx);
+          body.appendChild(meta);
+          const del = document.createElement('button');
+          del.type = 'button';
+          del.className = 'wm-del';
+          del.title = isUserWishId(w.id) ? 'Xóa lời chúc này' : 'Không xóa lời mặc định';
+          del.textContent = '✕';
+          if (!isUserWishId(w.id)) {
+            del.disabled = true;
+          } else {
+            del.addEventListener('click', function () {
+              if (!confirm('Xóa lời chúc này khỏi kho?')) return;
+              deleteWishById(w.id);
+              renderWishManagerList();
+              updateWishCountUI();
+            });
+          }
+          row.appendChild(body);
+          row.appendChild(del);
+          listEl.appendChild(row);
+        });
+      }
+      if (foot) {
+        const u = (currentWishes || []).filter(function (w) { return isUserWishId(w && w.id); }).length;
+        const d = (currentWishes || []).length - u;
+        foot.textContent = 'Kho: ' + WISH_STORE_KEY + ' · User ' + u + ' · Mặc định ' + d + ' · Tổng ' + (currentWishes || []).length;
+      }
+    }
+
+    function openWishManager() {
+      renderWishManagerList();
+      openModal('modal-wish-mgr');
+    }
+
+    function exportWishesJSON() {
+      const payload = {
+        v: WISH_STORE_VERSION,
+        app: 'thien-ha-loi-chuc',
+        exportedAt: new Date().toISOString(),
+        wishes: currentWishes || []
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'thienha-wishes-backup.json';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () {
+        URL.revokeObjectURL(a.href);
+        a.remove();
+      }, 500);
+      showToast('Đã xuất file backup JSON ⬇');
+    }
+
+    function importWishesFromFile(file, mode) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function () {
+        try {
+          const parsed = JSON.parse(String(reader.result || ''));
+          let list = Array.isArray(parsed) ? parsed : (parsed && parsed.wishes);
+          if (!Array.isArray(list) || !list.length) {
+            showToast('File JSON không có lời chúc hợp lệ');
+            return;
+          }
+          const normalized = list.map(normalizeWish).filter(Boolean);
+          if (mode === 'replace') {
+            currentWishes = normalized;
+          } else {
+            currentWishes = mergeWishLists(currentWishes, normalized);
+          }
+          saveWishes(currentWishes);
+          // Refresh sprites if scene ready
+          if (typeof scene !== 'undefined' && scene) {
+            try {
+              const existing = {};
+              (wishSprites || []).forEach(function (s) {
+                if (s.userData && s.userData.wishId) existing[s.userData.wishId] = true;
+              });
+              currentWishes.forEach(function (w) {
+                if (!w || !w.id || existing[w.id]) return;
+                if (w.target === 'earth' && typeof createEarthWishSprite === 'function') {
+                  createEarthWishSprite(w);
+                } else if (typeof createGalaxyWishSprite === 'function') {
+                  createGalaxyWishSprite(w);
+                }
+              });
+            } catch (e) {}
+          }
+          renderWishManagerList();
+          updateWishCountUI();
+          showToast('Đã nhập ' + normalized.length + ' lời chúc vào kho');
+        } catch (e) {
+          console.warn(e);
+          showToast('Không đọc được file JSON');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    document.getElementById('btn-wish-mgr')?.addEventListener('click', function () {
+      openWishManager();
+    });
+
+    document.querySelectorAll('#wm-filters button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('#wm-filters button').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        wishMgrFilter = btn.getAttribute('data-filter') || 'all';
+        renderWishManagerList();
+      });
+    });
+
+    document.getElementById('wm-export')?.addEventListener('click', exportWishesJSON);
+    document.getElementById('wm-import')?.addEventListener('click', function () {
+      document.getElementById('wm-import-file')?.click();
+    });
+    document.getElementById('wm-import-file')?.addEventListener('change', function (e) {
+      const f = e.target.files && e.target.files[0];
+      importWishesFromFile(f, 'merge');
+      e.target.value = '';
+    });
+    document.getElementById('wm-merge-old')?.addEventListener('click', function () {
+      const before = (currentWishes || []).length;
+      currentWishes = migrateAllLegacyWishes();
+      // migrate already writes store
+      const after = (currentWishes || []).length;
+      renderWishManagerList();
+      updateWishCountUI();
+      showToast(after > before
+        ? ('Đã gộp thêm ' + (after - before) + ' lời từ data cũ')
+        : 'Không còn data cũ để gộp');
+    });
+    document.getElementById('wm-clear-user')?.addEventListener('click', function () {
+      if (!confirm('Xóa TẤT CẢ lời chúc do bạn gửi? (Giữ lời mặc định)')) return;
+      const keep = (currentWishes || []).filter(function (w) { return !isUserWishId(w && w.id); });
+      // Remove user sprites
+      if (scene && wishSprites && wishSprites.length) {
+        const remain = [];
+        wishSprites.forEach(function (s) {
+          const id = s.userData && s.userData.wishId;
+          if (isUserWishId(id)) {
+            scene.remove(s);
+            if (s.material) {
+              if (s.material.map) s.material.map.dispose();
+              s.material.dispose();
+            }
+          } else remain.push(s);
+        });
+        wishSprites = remain;
+      }
+      currentWishes = keep.length ? keep : DEFAULT_WISHES.map(normalizeWish);
+      saveWishes(currentWishes);
+      renderWishManagerList();
+      updateWishCountUI();
+      showToast('Đã xóa lời chúc user');
     });
 
     // Prevent context menu
