@@ -2559,6 +2559,8 @@
     let earthCityLights = null; // Points đèn thành phố
     let earthAurora = null;
     let shootingStars = []; // sao băng
+    let blackHoleRoot = null;   // hố đen ngoài hệ Mặt Trời
+    let blackHoleMat = null;    // ShaderMaterial uniforms
     let lastCollisionCheck = 0;
     let isDragging = false;
     let previousMouse = { x: 0, y: 0 };
@@ -2572,6 +2574,7 @@
     let focusCenter = new THREE.Vector3(0, 0, 0); // lerp mượt
     let focusName = 'Mặt Trời';
     const ZERO_VEC = new THREE.Vector3(0, 0, 0); // tái sử dụng – tránh new mỗi frame
+    const FOCUS_WORLD_POS = new THREE.Vector3(); // vị trí world của focusTarget
     let pageVisible = true;
     let rafId = 0;
     // —— Performance budget (adaptive) ——
@@ -2584,7 +2587,7 @@
       dprCap: isMobile ? 1.15 : 1.5,
       starCount: isMobile ? 600 : 1800,
       dustCount: isMobile ? 140 : 380,
-      asteroidCount: isMobile ? 10 : 22,
+      asteroidCount: 0, // tắt thiên thạch
       // Khi frame > 28ms (~35fps) → giảm tần suất update phụ
       lagThresholdMs: 28,
       // Chỉ full-update Earth live khi focus Trái Đất hoặc camera gần
@@ -3673,7 +3676,11 @@
       });
       moon = new THREE.Mesh(moonGeo, moonMat);
       moon.userData.isMoon = true;
+      moon.userData.planetName = 'Mặt Trăng';
       moon.userData.focusRoot = moon;
+      moon.userData.focusDistance = isMobile ? 2.8 : 3.2;
+      moon.userData.minZoom = isMobile ? 1.4 : 1.55;
+      moon.userData.maxZoom = isMobile ? 18 : 24;
       moon.position.set(MOON_ORBIT_RADIUS, 0, 0);
       scene.add(moon);
 
@@ -3694,7 +3701,7 @@
       createPlanets();
       rebuildFocusableBodies();
 
-      // Icon dễ thương + bụi + thiên thạch (không còn text lời chúc bay quanh)
+      // Icon dễ thương + bụi vũ trụ
       createDecorations();
 
       // Events
@@ -4895,6 +4902,12 @@
     function isEarthFocused() {
       return !!(focusTarget && focusTarget.userData && focusTarget.userData.isEarth);
     }
+    function isMoonFocused() {
+      return !!(focusTarget && focusTarget.userData && focusTarget.userData.isMoon);
+    }
+    function isBlackHoleFocused() {
+      return !!(focusTarget && focusTarget.userData && focusTarget.userData.isBlackHole);
+    }
 
     /** Cập nhật HUD độ cao “vệ tinh” (km mô phỏng) */
     function updateSatelliteAltitude() {
@@ -4930,6 +4943,19 @@
       }
       if (focusTarget) {
         const ud = focusTarget.userData || {};
+        if (ud.isMoon) {
+          return {
+            zMin: ud.minZoom != null ? ud.minZoom : 1.5,
+            zMax: ud.maxZoom != null ? ud.maxZoom : 24
+          };
+        }
+        if (ud.isBlackHole) {
+          const volR = ud.volumeRadius != null ? ud.volumeRadius : 24;
+          return {
+            zMin: ud.minZoom != null ? ud.minZoom : volR * 1.12,
+            zMax: ud.maxZoom != null ? ud.maxZoom : 120
+          };
+        }
         return {
           zMin: ud.minZoom != null ? ud.minZoom : 12,
           zMax: ud.maxZoom != null ? ud.maxZoom : 120
@@ -5197,6 +5223,263 @@
       scene.add(spaceDust);
     }
 
+
+    /**
+     * Hố đen — shader raymarch như blackhole.html
+     * Thu nhỏ: 1 unit shader ≈ bán kính Trái Đất (2.35)
+     */
+    function createBlackHole() {
+      const BH_DIST = isMobile ? 480 : 560;
+      const BH_POS = new THREE.Vector3(BH_DIST * 0.78, BH_DIST * 0.05, -BH_DIST * 0.60);
+      const EARTH_R = 2.35;
+      const worldScale = EARTH_R; // shader r=1 → world
+      const N_STEPS = isMobile ? 48 : 72;
+      const bhFocusDist = isMobile ? 11 : 13;
+
+      const vert = [
+        'varying vec3 vWorldPos;',
+        'void main() {',
+        '  vec4 wp = modelMatrix * vec4(position, 1.0);',
+        '  vWorldPos = wp.xyz;',
+        '  gl_Position = projectionMatrix * viewMatrix * wp;',
+        '}'
+      ].join('\n');
+
+      const fragLines = [
+        'precision highp float;',
+        'varying vec3 vWorldPos;',
+        'uniform vec3 uBHPos;',
+        'uniform float uTime;',
+        'uniform float uDiskGain;',
+        'uniform float uStarGain;',
+        'uniform float uDiskPhase;',
+        'uniform float uSize;',
+        '',
+        'const float DISK_INNER = 1.80;',
+        'const float DISK_OUTER = 9.50;',
+        'const float DISK_INCL = 0.22;',  // gần nằm ngang (XZ)
+        'const float DISK_ROLL0 = 0.05;',
+        'const float DISK_OPACITY = 0.88;',
+        'const float DISK_TEMP = 5200.0;',
+        'const float DOPPLER_MIX = 0.72;',
+        'const float DISK_BEAM = 2.70;',
+        'const float DISK_SPEED = 5.20;',
+        'const float DISK_WIND = 6.80;',
+        'const float DISK_CONTRAST = 1.65;',
+        'const float EXPOSURE = 1.50;',
+        'const float DILATION_MIN = 0.22;',
+        'const int N_STEPS = __NSTEPS__;',
+        '',
+        'float hash21(vec2 p) {',
+        '  p = fract(p * vec2(234.34, 435.345));',
+        '  p += dot(p, p + 34.23);',
+        '  return fract(p.x * p.y);',
+        '}',
+        'float vnoiseWrapY(vec2 p, float perY) {',
+        '  vec2 i = floor(p), f = fract(p);',
+        '  f = f * f * (3.0 - 2.0 * f);',
+        '  float y0 = mod(i.y, perY), y1 = mod(i.y + 1.0, perY);',
+        '  return mix(',
+        '    mix(hash21(vec2(i.x, y0)), hash21(vec2(i.x + 1.0, y0)), f.x),',
+        '    mix(hash21(vec2(i.x, y1)), hash21(vec2(i.x + 1.0, y1)), f.x),',
+        '    f.y);',
+        '}',
+        'vec3 blackbody(float T) {',
+        '  float t = clamp(T, 1500.0, 40000.0) / 100.0;',
+        '  float r = t <= 66.0 ? 1.0 : clamp(1.292936 * pow(t - 60.0, -0.1332047), 0.0, 1.0);',
+        '  float g = t <= 66.0 ? clamp(0.3900816 * log(t) - 0.6318414, 0.0, 1.0)',
+        '                      : clamp(1.1298909 * pow(t - 60.0, -0.0755148), 0.0, 1.0);',
+        '  float b = t >= 66.0 ? 1.0 : (t <= 19.0 ? 0.0 : clamp(0.5432068 * log(t - 10.0) - 1.1962540, 0.0, 1.0));',
+        '  return vec3(r, g, b);',
+        '}',
+        'vec3 stars(vec3 d) {',
+        '  vec2 sph = vec2(atan(d.x, -d.z), asin(clamp(d.y, -1.0, 1.0)));',
+        '  vec2 g = sph * 52.0;',
+        '  vec2 id = floor(g);',
+        '  float h = hash21(id);',
+        '  if (h < 0.935) return vec3(0.0);',
+        '  vec2 f = fract(g) - 0.5;',
+        '  vec2 off = (vec2(hash21(id + 17.3), hash21(id + 31.7)) - 0.5) * 0.65;',
+        '  float spark = smoothstep(0.085, 0.0, length(f - off));',
+        '  float tw = 0.65 + 0.35 * sin(uTime * (0.4 + 2.2 * hash21(id + 5.1)) + 37.0 * h);',
+        '  vec3 tint = mix(vec3(1.0, 0.80, 0.55), vec3(0.70, 0.82, 1.0), hash21(id + 2.9));',
+        '  float bright = mix(0.45, 2.6, smoothstep(0.935, 1.0, h));',
+        '  return tint * spark * tw * bright;',
+        '}',
+        'void main() {',
+        '  vec3 ro = cameraPosition - uBHPos;',
+        '  vec3 rd = normalize(vWorldPos - cameraPosition);',
+        '  float scale = 1.0 / max(uSize, 0.2);',
+        '  ro *= scale;',
+        '  float rin = DISK_INNER;',
+        '  float rout = DISK_OUTER;',
+        '  float Zfar = max(length(ro) * 1.8, rout + 20.0);',
+        '  float I = clamp(uSize * 0.5, 0.0, 1.0);',
+        '  float dil = mix(1.0, DILATION_MIN, I);',
+        '  float roll = DISK_ROLL0;',  // cố định mặt phẳng ngang, không lật đĩa
+        '  float ci = cos(DISK_INCL), si = sin(DISK_INCL);',
+        '  float cr = cos(roll), sr = sin(roll);',
+        '  vec3 n = normalize(vec3(sr * si, ci, cr * si));',
+        '  vec3 e2 = normalize(cross(n, vec3(1.0, 0.0, 0.0)));',
+        '  if (dot(e2, e2) < 0.01) e2 = normalize(cross(n, vec3(0.0, 0.0, 1.0)));',
+        '  vec3 e1 = cross(e2, n);',
+        '  float sdir = DISK_SPEED < 0.0 ? -1.0 : 1.0;',
+        '  float spd = abs(DISK_SPEED);',
+        '  vec3 Lvec = cross(ro, rd);',
+        '  float h2 = dot(Lvec, Lvec);',
+        '  vec3 x = ro;',
+        '  vec3 v = rd;',
+        '  vec3 emitc = vec3(0.0);',
+        '  float trans = 1.0;',
+        '  bool captured = false;',
+        '  float sPrev = dot(x, n);',
+        '  vec3 xPrev = x;',
+        '  for (int i = 0; i < N_STEPS; i++) {',
+        '    float r2 = dot(x, x);',
+        '    if (r2 < 1.02) { captured = true; break; }',
+        '    if (r2 > Zfar * Zfar) break;',
+        '    float r = sqrt(r2);',
+        '    float dt = clamp(0.14 * r, 0.025, 1.6);',
+        '    vec3 a = -1.5 * h2 * x / (r2 * r2 * r + 1e-12);',
+        '    v += a * (0.5 * dt);',
+        '    x += v * dt;',
+        '    r2 = dot(x, x);',
+        '    r = sqrt(max(r2, 1e-8));',
+        '    a = -1.5 * h2 * x / (r2 * r2 * r + 1e-12);',
+        '    v += a * (0.5 * dt);',
+        '    float s = dot(x, n);',
+        '    if (s * sPrev < 0.0 && trans > 0.012) {',
+        '      float tc = sPrev / (sPrev - s);',
+        '      vec3 xc = mix(xPrev, x, tc);',
+        '      float rc = length(xc);',
+        '      if (rc > rin && rc < rout) {',
+        '        float band = smoothstep(rin, rin * 1.22, rc)',
+        '                   * (1.0 - smoothstep(rout * 0.68, rout, rc));',
+        '        float phi = atan(dot(xc, e2), dot(xc, e1));',
+        '        float turns = phi / 6.28318530718;',
+        '        float kep = pow(rin / rc, 1.5);',
+        '        float gloc = sqrt(max(1.0 - 1.5 / rc, 0.02));',
+        '        float swirl = rc * DISK_WIND * 0.12',
+        '                    - uTime * kep * spd * gloc * dil * sdir',
+        '                    - uDiskPhase * 2.5;',
+        '        float streaks = vnoiseWrapY(vec2(rc * 2.8, turns * 19.0 + swirl * 3.0), 19.0) * 0.65',
+        '                      + vnoiseWrapY(vec2(rc * 1.0, turns * 9.0 + swirl * 1.5 + 7.0), 9.0) * 0.35;',
+        '        streaks = 0.30 + DISK_CONTRAST * streaks * streaks;',
+        '        vec3 gasdir = normalize(cross(n, xc)) * sdir;',
+        '        float beta = clamp(inversesqrt(max(2.0 * (rc - 1.0), 0.2)), 0.0, 0.99);',
+        '        float gfac = gloc / max(1.0 + beta * dot(gasdir, normalize(v)), 0.05);',
+        '        gfac = mix(1.0, gfac, DOPPLER_MIX);',
+        '        float xpr = max(1.0 - sqrt(rin / rc), 0.0);',
+        '        float tprof = pow(rin / rc, 0.75) * pow(xpr, 0.25) / 0.488;',
+        '        vec3 cbb = blackbody(DISK_TEMP * tprof * gfac);',
+        '        float boost = pow(gfac, DISK_BEAM);',
+        '        float density = band * streaks;',
+        '        emitc += trans * cbb * (uDiskGain * 2.20 * density * tprof * tprof * boost);',
+        '        trans *= 1.0 - clamp(DISK_OPACITY * density, 0.0, 1.0);',
+        '      }',
+        '    }',
+        '    sPrev = s;',
+        '    xPrev = x;',
+        '  }',
+        '  if (!captured && dot(x, x) < 4.0) captured = true;',
+        '  if (captured) {',
+        '    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);',
+        '    return;',
+        '  }',
+        '  vec3 bg = vec3(0.0);',
+        '  vec3 d = normalize(v);',
+        '  bg += stars(d) * uStarGain * 0.25;',
+        '  vec3 col = bg * trans + (vec3(1.0) - exp(-emitc * EXPOSURE));',
+        '  float alpha = clamp(length(emitc) * 2.2 + (1.0 - trans), 0.0, 1.0);',
+        '  if (alpha < 0.03) discard;',
+        '  gl_FragColor = vec4(col, alpha);',
+        '}'
+      ];
+      // bake step count (số nguyên) — không dùng str() Python trong runtime
+      const frag = fragLines.join('\n').replace('__NSTEPS__', String(N_STEPS));
+
+      blackHoleMat = new THREE.ShaderMaterial({
+        uniforms: {
+          uBHPos: { value: BH_POS.clone() },
+          uTime: { value: 0 },
+          uDiskGain: { value: 1.6 },
+          uStarGain: { value: 0.55 },
+          uDiskPhase: { value: 0 },
+          uSize: { value: worldScale }
+        },
+        vertexShader: vert,
+        fragmentShader: frag,
+        transparent: true,
+        depthWrite: false,
+        depthTest: true,
+        side: THREE.DoubleSide, // ray qua bề mặt volume
+        blending: THREE.NormalBlending
+      });
+
+      blackHoleRoot = new THREE.Group();
+      blackHoleRoot.name = 'BlackHole';
+      blackHoleRoot.position.copy(BH_POS);
+      blackHoleRoot.frustumCulled = false;
+
+      // Lõi đen dự phòng (silhouette)
+      const core = new THREE.Mesh(
+        new THREE.SphereGeometry(worldScale * 0.98, 24, 18),
+        new THREE.MeshBasicMaterial({ color: 0x000000 })
+      );
+      core.frustumCulled = false;
+      // minZoom gán sau khi biết volR (bên dưới sync)
+      core.userData = {
+        isBlackHole: true,
+        planetName: 'Hố đen',
+        focusDistance: bhFocusDist,
+        minZoom: worldScale * 10.2 * 1.12,
+        maxZoom: isMobile ? 90 : 120,
+        volumeRadius: worldScale * 10.2,
+        focusRoot: core
+      };
+      blackHoleRoot.add(core);
+
+      // Volume raymarch — bao đĩa; camera KHÔNG được vào trong volume (ray sai hướng)
+      const volR = worldScale * 10.2;
+      // minZoom > volR: zoom sát vẫn thấy, không “chui” vào mesh volume → mất hình
+      const bhMinZoom = volR * 1.12;
+      const bhMaxZoom = isMobile ? 90 : 120;
+      const volume = new THREE.Mesh(
+        new THREE.SphereGeometry(volR, isMobile ? 24 : 32, isMobile ? 16 : 24),
+        blackHoleMat
+      );
+      volume.frustumCulled = false;
+      volume.renderOrder = 2;
+      volume.userData = {
+        isBlackHole: true,
+        planetName: 'Hố đen',
+        focusDistance: Math.max(bhFocusDist, bhMinZoom),
+        minZoom: bhMinZoom,
+        maxZoom: bhMaxZoom,
+        volumeRadius: volR,
+        focusRoot: core
+      };
+      blackHoleRoot.add(volume);
+      // Đồng bộ limit zoom cho core / hit
+      core.userData.minZoom = bhMinZoom;
+      core.userData.maxZoom = bhMaxZoom;
+      core.userData.volumeRadius = volR;
+      core.userData.focusDistance = Math.max(bhFocusDist, bhMinZoom);
+
+      // Hit proxy
+      const hit = new THREE.Mesh(
+        new THREE.SphereGeometry(worldScale * 4, 12, 10),
+        new THREE.MeshBasicMaterial({ visible: false })
+      );
+      hit.userData = Object.assign({}, core.userData);
+      blackHoleRoot.add(hit);
+
+      scene.add(blackHoleRoot);
+      blackHoleRoot.userData.core = core;
+      blackHoleRoot.userData.volume = volume;
+      return blackHoleRoot;
+    }
+
     function createDecorations() {
       const iconsToUse = isMobile ? ICONS.slice(0, 10) : ICONS;
       // Nhân bản vài icon cho đầy không gian
@@ -5204,8 +5487,10 @@
       for (let c = 0; c < copies; c++) {
         iconsToUse.forEach((icon) => createCuteIconSprite(icon));
       }
-      createAsteroids();
+      // Thiên thạch đã tắt
       createSpaceDust();
+      createBlackHole();
+      if (typeof rebuildFocusableBodies === 'function') rebuildFocusableBodies();
       // Khôi phục lời chúc đang bay quanh Trái Đất
       restoreEarthWishSprites();
     }
@@ -5288,6 +5573,7 @@
     // MENU HÀNH TINH – quick focus (UI module độc lập, giao tiếp qua setFocusTarget)
     // =====================================================================
     const PLANET_MENU_META = {
+      blackhole: { icon: '🕳️', label: 'Hố đen', badge: 'Xa' },
       sun:     { icon: '☀️', label: 'Mặt Trời',  badge: 'Tâm' },
       Mercury: { icon: '☿️', label: 'Sao Thủy',  badge: 'I' },
       Venus:   { icon: '♀️', label: 'Sao Kim',   badge: 'II' },
@@ -5339,11 +5625,22 @@
 
       if (moon) {
         addItem('moon', () => {
-          if (earthPlanet && earthPlanet.mesh) {
-            setFocusTarget(earthPlanet.mesh, 'Trái Đất · Mặt Trăng');
-            cameraDistance = isMobile ? 5.0 : 5.8;
-          }
+          setFocusTarget(moon, 'Mặt Trăng');
         });
+      }
+
+      // Hố đen — xa ngoài quỹ đạo hệ Mặt Trời
+      if (blackHoleRoot) {
+        let bhMesh = null;
+        blackHoleRoot.traverse(function (o) {
+          if (o.isMesh && o.userData && o.userData.isBlackHole) bhMesh = o;
+        });
+        if (bhMesh) {
+          addItem('blackhole', () => {
+            const target = (bhMesh.userData && bhMesh.userData.focusRoot) || bhMesh;
+            setFocusTarget(target, 'Hố đen');
+          });
+        }
       }
 
       planetMenuBuilt = true;
@@ -5356,10 +5653,12 @@
       const items = listEl.querySelectorAll('.planet-menu-item');
       let activeKey = 'sun';
       if (focusTarget) {
-        if (focusTarget.userData && focusTarget.userData.isMoon) {
+        if (focusTarget.userData && focusTarget.userData.isBlackHole) {
+          activeKey = 'blackhole';
+        } else if (focusTarget.userData && focusTarget.userData.isMoon) {
           activeKey = 'moon';
         } else if (focusTarget.userData && focusTarget.userData.planetName) {
-          activeKey = focusTarget.userData.planetName;
+          activeKey = focusTarget.userData.planetName === 'Hố đen' ? 'blackhole' : focusTarget.userData.planetName;
         } else if (earthPlanet && focusTarget === earthPlanet.mesh) {
           activeKey = 'Earth';
         }
@@ -5454,9 +5753,11 @@
         updateFocusUI();
         return;
       }
-      focusTarget = mesh;
-      focusName = name || (mesh.userData && mesh.userData.planetName) || 'Hành tinh';
-      const dist = (mesh.userData && mesh.userData.focusDistance) || 40;
+      // Nếu mesh con có focusRoot (vd. volume hố đen → core) thì khóa vào root
+      const focusMesh = (mesh.userData && mesh.userData.focusRoot) ? mesh.userData.focusRoot : mesh;
+      focusTarget = focusMesh;
+      focusName = name || (focusMesh.userData && focusMesh.userData.planetName) || 'Hành tinh';
+      const dist = (focusMesh.userData && focusMesh.userData.focusDistance) || 40;
       cameraDistance = dist;
       updateFocusUI();
       const isEarthFocus = earthPlanet && mesh === earthPlanet.mesh;
@@ -5473,6 +5774,11 @@
         if (planets[i].mesh) list.push(planets[i].mesh);
       }
       if (moon) list.push(moon);
+      if (blackHoleRoot) {
+        blackHoleRoot.traverse(function (o) {
+          if (o.isMesh && o.userData && o.userData.isBlackHole) list.push(o);
+        });
+      }
       focusableBodiesCache = list;
       return list;
     }
@@ -5533,15 +5839,16 @@
         const root = (hitObj.userData && hitObj.userData.focusRoot) || hitObj;
 
         if (root === moon || (root.userData && root.userData.isMoon)) {
-          if (earthPlanet && earthPlanet.mesh) {
-            setFocusTarget(earthPlanet.mesh, 'Trái Đất · Mặt Trăng');
-            // Quỹ đạo vệ tinh ổn định (không sát đến mức lộ facet)
-            cameraDistance = isMobile ? 5.0 : 5.8;
-          }
+          setFocusTarget(moon, 'Mặt Trăng');
           return true;
         }
         if (root === sun || (root.userData && root.userData.isSun)) {
           setFocusTarget(null);
+          return true;
+        }
+        if (root.userData && root.userData.isBlackHole) {
+          const target = root.userData.focusRoot || root;
+          setFocusTarget(target, 'Hố đen');
           return true;
         }
         if (root.userData && root.userData.planetName) {
@@ -5710,14 +6017,17 @@
       }
 
       // Camera orbit quanh focus (Mặt Trời hoặc hành tinh)
-      const desiredCenter = (focusTarget && focusTarget.position)
-        ? focusTarget.position
-        : ZERO_VEC;
-      focusCenter.lerp(desiredCenter, isEarthFocused() ? 0.12 : 0.06);
+      // Luôn dùng world position (hố đen / object con group không dính local 0,0,0)
+      if (focusTarget) {
+        focusTarget.getWorldPosition(FOCUS_WORLD_POS);
+      } else {
+        FOCUS_WORLD_POS.copy(ZERO_VEC);
+      }
+      focusCenter.lerp(FOCUS_WORLD_POS, isEarthFocused() ? 0.12 : 0.06);
 
-      // Earth: quỹ đạo cầu đều (yFactor=1) — tránh camera “chui” vào trong hành tinh khi pitch
+      // Earth / hố đen: quỹ đạo cầu đều — tránh camera chui vào volume
       // Hệ mặt trời: yFactor < 1 cho cảm giác quỹ đạo dẹt
-      const yFactor = isEarthFocused() ? 1.0 : 0.55;
+      const yFactor = (isEarthFocused() || isBlackHoleFocused() || isMoonFocused()) ? 1.0 : 0.55;
       let cx = focusCenter.x + Math.sin(currentRot.y) * Math.cos(currentRot.x) * cameraDistance;
       let cy = focusCenter.y + Math.sin(currentRot.x) * cameraDistance * yFactor;
       let cz = focusCenter.z + Math.cos(currentRot.y) * Math.cos(currentRot.x) * cameraDistance;
@@ -5744,6 +6054,43 @@
         if (Math.abs(camera.near - wantNear) > 0.008) {
           camera.near = wantNear;
           camera.far = 2000;
+          camera.updateProjectionMatrix();
+        }
+            } else if (isMoonFocused() && focusTarget) {
+        const R = 0.65;
+        const minDist = R + 0.85;
+        const dx = cx - focusCenter.x, dy = cy - focusCenter.y, dz = cz - focusCenter.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+        if (dist < minDist) {
+          const s = minDist / dist;
+          cx = focusCenter.x + dx * s;
+          cy = focusCenter.y + dy * s;
+          cz = focusCenter.z + dz * s;
+          cameraDistance = Math.max(cameraDistance, minDist);
+        }
+        if (camera.near < 0.15) {
+          camera.near = 0.12;
+          camera.far = 2000;
+          camera.updateProjectionMatrix();
+        }
+
+      } else if (isBlackHoleFocused() && focusTarget) {
+        const volR = (focusTarget.userData && focusTarget.userData.volumeRadius) || 24;
+        const minDist = volR * 1.12;
+        const dx = cx - focusCenter.x;
+        const dy = cy - focusCenter.y;
+        const dz = cz - focusCenter.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+        if (dist < minDist) {
+          const s = minDist / dist;
+          cx = focusCenter.x + dx * s;
+          cy = focusCenter.y + dy * s;
+          cz = focusCenter.z + dz * s;
+          cameraDistance = Math.max(cameraDistance, minDist);
+        }
+        if (camera.near < 0.4) {
+          camera.near = 0.5;
+          camera.far = 2500;
           camera.updateProjectionMatrix();
         }
       } else if (camera.near < 0.4) {
@@ -5900,6 +6247,15 @@
           ss.trail.geometry.dispose();
           ss.trail.material.dispose();
           shootingStars.splice(i, 1);
+        }
+      }
+
+      // Hố đen: shader phase chậm + đồng bộ vị trí world
+      if (blackHoleMat && blackHoleMat.uniforms) {
+        blackHoleMat.uniforms.uTime.value = t;
+        blackHoleMat.uniforms.uDiskPhase.value = t * 0.12; // chậm hơn bản gốc
+        if (blackHoleRoot) {
+          blackHoleRoot.getWorldPosition(blackHoleMat.uniforms.uBHPos.value);
         }
       }
 
