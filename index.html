@@ -2460,8 +2460,8 @@
     // Bước 3: Settings → API → copy Project URL + anon public key
     // Bước 4: Dán 2 giá trị vào 2 dòng dưới (giữ dấu nháy)
     // Để trống = Local only (không chia sẻ giữa máy)
-    const SUPABASE_URL = 'https://nyzmouelglfthynhgjef.supabase.co/rest/v1/';        // 'https://xxxx.supabase.co'
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55em1vdWVsZ2xmdGh5bmhnamVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0NDQ0NTgsImV4cCI6MjEwNzAyMDQ1OH0.HV9QioCu4IZdu2gcny7TFZF7Gwmt4iPpmIXZ2kt6IQE';   // 'eyJhbGciOi...'
+    const SUPABASE_URL = 'https://nyzmouelglfthynhgjef.supabase.co';  // KHÔNG thêm /rest/v1/
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55em1vdWVsZ2xmdGh5bmhnamVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0NDQ0NTgsImV4cCI6MjEwNzAyMDQ1OH0.HV9QioCu4IZdu2gcny7TFZF7Gwmt4iPpmIXZ2kt6IQE';
     const CLOUD_TABLE = 'wishes';
     const CLIENT_ID_KEY = 'thienha_client_id';
 
@@ -2539,8 +2539,17 @@
       }
     }
 
+    function normalizeSupabaseUrl(url) {
+      var u = String(url || '').trim();
+      // User thường dán nhầm /rest/v1/ từ docs REST — client tự thêm path
+      u = u.replace(/\/rest\/v1\/?$/i, '');
+      u = u.replace(/\/+$/, '');
+      return u;
+    }
+
     function isCloudConfigured() {
-      return !!(SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_URL.indexOf('http') === 0);
+      var u = normalizeSupabaseUrl(SUPABASE_URL);
+      return !!(u && SUPABASE_ANON_KEY && u.indexOf('http') === 0 && u.indexOf('supabase.co') !== -1);
     }
 
     function initSupabase() {
@@ -2549,15 +2558,17 @@
         return false;
       }
       if (typeof supabase === 'undefined' || !supabase.createClient) {
-        console.warn('[WishCloud] supabase-js chưa load');
+        console.warn('[WishCloud] supabase-js chưa load (CDN / mạng)');
         cloudEnabled = false;
         return false;
       }
       try {
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        var baseUrl = normalizeSupabaseUrl(SUPABASE_URL);
+        supabaseClient = supabase.createClient(baseUrl, SUPABASE_ANON_KEY, {
           auth: { persistSession: false, autoRefreshToken: false }
         });
         cloudEnabled = true;
+        console.log('[WishCloud] connected', baseUrl);
         return true;
       } catch (e) {
         console.warn('[WishCloud] init lỗi', e);
