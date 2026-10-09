@@ -2391,7 +2391,7 @@
     <div class="wish-mgr-card">
       <button class="btn-close-modal" data-close="modal-wish-mgr">×</button>
       <div class="wish-mgr-title">📋 Quản lý lời chúc</div>
-      <p class="wish-mgr-sub">Local + Cloud (Supabase nếu đã cấu hình) · Xuất JSON backup · Realtime giữa các máy</p>
+      <p class="wish-mgr-sub">Kho dữ liệu độc lập với phiên bản file HTML · Xuất JSON để backup khi đổi máy</p>
       <div class="wish-mgr-toolbar">
         <button type="button" id="wm-export">⬇ Xuất JSON</button>
         <button type="button" id="wm-import">⬆ Nhập JSON</button>
@@ -2447,23 +2447,6 @@
     const WISH_STORE_KEY = 'thienha_wish_store';
     const WISH_STORE_VERSION = 1;
     const DAILY_LIMIT_KEY = 'thienha_daily_limit_store';
-    // Legacy keys (migrate một lần)
-    const LEGACY_WISH_KEYS = [
-      'thienha_wishes_v5_chinh',
-      'thienha_wishes_v5',
-      'thienha_wishes_v5_global'
-    ];
-
-    // ========== SUPABASE CONFIG — BẮT BUỘC ĐIỀN ĐỂ CLOUD ==========
-    // Bước 1: https://supabase.com → New project (đợi xanh)
-    // Bước 2: SQL Editor → dán supabase-wishes-setup.sql → Run
-    // Bước 3: Settings → API → copy Project URL + anon public key
-    // Bước 4: Dán 2 giá trị vào 2 dòng dưới (giữ dấu nháy)
-    // Để trống = Local only (không chia sẻ giữa máy)
-    const SUPABASE_URL = 'https://nyzmouelglfthynhgjef.supabase.co';  // KHÔNG thêm /rest/v1/
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55em1vdWVsZ2xmdGh5bmhnamVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0NDQ0NTgsImV4cCI6MjEwNzAyMDQ1OH0.HV9QioCu4IZdu2gcny7TFZF7Gwmt4iPpmIXZ2kt6IQE';
-    const CLOUD_TABLE = 'wishes';
-    const CLIENT_ID_KEY = 'thienha_client_id';
 
     /**
      * SafeStorage — tránh crash khi document sandbox / iframe chat
@@ -2488,7 +2471,7 @@
     const safeStorage = {
       getItem: function (key) {
         try {
-          if (canUseLocalStorage()) return window.safeStorage.getItem(key);
+          if (canUseLocalStorage()) return window.localStorage.getItem(key);
         } catch (e) {}
         return __memStore.has(key) ? __memStore.get(key) : null;
       },
@@ -2509,17 +2492,30 @@
       },
       key: function (i) {
         try {
-          if (canUseLocalStorage()) return window.safeStorage.key(i);
+          if (canUseLocalStorage()) return window.localStorage.key(i);
         } catch (e) {}
         return Array.from(__memStore.keys())[i] || null;
       },
       get length() {
         try {
-          if (canUseLocalStorage()) return window.safeStorage.length;
+          if (canUseLocalStorage()) return window.localStorage.length;
         } catch (e) {}
         return __memStore.size;
       }
     };
+    // Legacy keys (migrate một lần)
+    const LEGACY_WISH_KEYS = [
+      'thienha_wishes_v5_chinh',
+      'thienha_wishes_v5',
+      'thienha_wishes_v5_global'
+    ];
+
+    // ========== SUPABASE CONFIG ==========
+    // URL: chỉ domain project — KHÔNG thêm /rest/v1/
+    const SUPABASE_URL = 'https://nyzmouelglfthynhgjef.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55em1vdWVsZ2xmdGh5bmhnamVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0NDQ0NTgsImV4cCI6MjEwNzAyMDQ1OH0.HV9QioCu4IZdu2gcny7TFZF7Gwmt4iPpmIXZ2kt6IQE';
+    const CLOUD_TABLE = 'wishes';
+    const CLIENT_ID_KEY = 'thienha_client_id';
 
     let supabaseClient = null;
     let cloudEnabled = false;
@@ -2541,7 +2537,6 @@
 
     function normalizeSupabaseUrl(url) {
       var u = String(url || '').trim();
-      // User thường dán nhầm /rest/v1/ từ docs REST — client tự thêm path
       u = u.replace(/\/rest\/v1\/?$/i, '');
       u = u.replace(/\/+$/, '');
       return u;
@@ -2549,7 +2544,7 @@
 
     function isCloudConfigured() {
       var u = normalizeSupabaseUrl(SUPABASE_URL);
-      return !!(u && SUPABASE_ANON_KEY && u.indexOf('http') === 0 && u.indexOf('supabase.co') !== -1);
+      return !!(u && SUPABASE_ANON_KEY && u.indexOf('http') === 0);
     }
 
     function initSupabase() {
@@ -2558,7 +2553,7 @@
         return false;
       }
       if (typeof supabase === 'undefined' || !supabase.createClient) {
-        console.warn('[WishCloud] supabase-js chưa load (CDN / mạng)');
+        console.warn('[WishCloud] supabase-js chưa load');
         cloudEnabled = false;
         return false;
       }
@@ -2681,14 +2676,8 @@
         }, function (payload) {
           const w = rowToWish(payload.new);
           if (!w) return;
-          // Bỏ qua echo của chính mình (đã add optimistic)
-          if (w.clientId && w.clientId === getClientId()) {
-            // vẫn merge id nếu cần
-            applyCloudWishLocally(w, { sprite: true });
-            return;
-          }
           applyCloudWishLocally(w, { sprite: true });
-          if (typeof showToast === 'function') {
+          if (w.clientId && w.clientId !== getClientId() && typeof showToast === 'function') {
             showToast('Có lời chúc mới từ thiên hà ✨');
           }
         })
@@ -2700,7 +2689,6 @@
           const id = payload.old && payload.old.id;
           if (!id) return;
           if (!(currentWishes || []).some(function (w) { return w && w.id === id; })) return;
-          // Xóa local + sprite (không gọi lại cloud)
           currentWishes = currentWishes.filter(function (w) { return w.id !== id; });
           try { saveWishes(currentWishes); } catch (e) {}
           if (typeof scene !== 'undefined' && scene && wishSprites) {
@@ -2730,7 +2718,7 @@
       if (!el) return;
       if (!isCloudConfigured()) {
         el.textContent = 'Local';
-        el.title = 'Chưa cấu hình Supabase — lời chúc chỉ trên máy này';
+        el.title = 'Chưa cấu hình Supabase';
         el.dataset.mode = 'local';
         return;
       }
@@ -2762,12 +2750,10 @@
       try {
         const remote = await fetchCloudWishes();
         if (!remote) return;
-        // Merge: cloud ưu tiên cho id trùng, giữ default local nếu cloud trống hoàn toàn
         const defaults = (currentWishes || []).filter(function (w) {
           return w && w.id && String(w.id).indexOf('d') === 0;
         });
         let merged = mergeWishLists(defaults, remote);
-        // Giữ user local chưa lên cloud (offline)
         const remoteIds = {};
         remote.forEach(function (w) { if (w && w.id) remoteIds[w.id] = true; });
         (currentWishes || []).forEach(function (w) {
@@ -2777,11 +2763,9 @@
         });
         currentWishes = merged;
         try { saveWishes(currentWishes); } catch (e) {}
-        // Sprites cho wish mới (khi scene đã có)
         if (typeof scene !== 'undefined' && scene) {
           currentWishes.forEach(function (w) {
-            if (w && String(w.id).indexOf('u_') === 0) ensureWishSprite(w);
-            if (w && w.target === 'earth') ensureWishSprite(w);
+            if (w && (String(w.id).indexOf('u_') === 0 || w.target === 'earth')) ensureWishSprite(w);
           });
         }
         if (typeof updateWishCountUI === 'function') updateWishCountUI();
@@ -6301,7 +6285,7 @@
       restoreEarthWishSprites();
     }
 
-    /** Thêm lời chúc mới (target: 'galaxy' | 'earth') — local + cloud */
+    /** Thêm lời chúc mới (target: 'galaxy' | 'earth') */
     function addWishToGalaxy(text, author, target) {
       const cleanText = (text || '').trim().slice(0, 80);
       if (!cleanText) return false;
@@ -6339,7 +6323,6 @@
         else createGalaxyWishSprite(newWish);
       }
 
-      // Cloud async — không chặn UI
       if (cloudEnabled) {
         insertCloudWish(newWish).then(function (res) {
           if (!res.ok) {
@@ -7793,7 +7776,7 @@
     // Khởi tạo phase sảnh
     setAppPhase('LOBBY');
 
-    // WishCloud: đồng bộ Supabase (nếu đã cấu hình URL + key)
+    // WishCloud bootstrap
     try {
       bootstrapWishCloud().catch(function (e) {
         console.warn('[WishCloud] bootstrap', e);
