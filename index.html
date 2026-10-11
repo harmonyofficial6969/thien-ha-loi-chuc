@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#000003" />
-  <title>Thiên Hà Lời Chúc · Hố đen bẻ cong không gian</title>
+  <title>Thiên Hà Lời Chúc · Trái Đất sống</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -1875,103 +1875,6 @@
       transform: none;
     }
 
-
-    /* ===== Wish Manager (data control) ===== */
-    .wish-mgr-card {
-      background: var(--glass-bg);
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
-      border: 1px solid var(--glass-border);
-      border-radius: 22px;
-      padding: 22px 18px 18px;
-      max-width: 440px;
-      width: 94vw;
-      max-height: min(82vh, 640px);
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.65);
-      transform: scale(0.94);
-      transition: transform 0.3s cubic-bezier(0.34,1.4,0.64,1);
-      text-align: left;
-    }
-    .modal-overlay.open .wish-mgr-card { transform: scale(1); }
-    .wish-mgr-title {
-      font-size: 1.15rem; font-weight: 700; color: #f8fafc;
-      text-align: center; margin-bottom: 4px;
-    }
-    .wish-mgr-sub {
-      font-size: 0.78rem; color: #94a3b8; text-align: center;
-      margin-bottom: 12px; line-height: 1.4;
-    }
-    .wish-mgr-toolbar {
-      display: flex; flex-wrap: wrap; gap: 6px;
-      margin-bottom: 10px; justify-content: center;
-    }
-    .wish-mgr-toolbar button {
-      font-family: inherit; font-size: 0.75rem; font-weight: 600;
-      padding: 7px 11px; border-radius: 10px; cursor: pointer;
-      border: 1px solid rgba(148,163,184,0.35);
-      background: rgba(255,255,255,0.06); color: #e2e8f0;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .wish-mgr-toolbar button:hover {
-      background: rgba(56,189,248,0.15); border-color: rgba(56,189,248,0.45);
-    }
-    .wish-mgr-toolbar button.danger {
-      border-color: rgba(248,113,113,0.4); color: #fecaca;
-    }
-    .wish-mgr-toolbar button.danger:hover {
-      background: rgba(185,28,28,0.35);
-    }
-    .wish-mgr-filters {
-      display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;
-    }
-    .wish-mgr-filters button {
-      font-family: inherit; font-size: 0.72rem; font-weight: 600;
-      padding: 5px 10px; border-radius: 999px; cursor: pointer;
-      border: 1px solid rgba(148,163,184,0.3);
-      background: transparent; color: #94a3b8;
-    }
-    .wish-mgr-filters button.active {
-      background: rgba(56,189,248,0.2); border-color: rgba(56,189,248,0.5); color: #7dd3fc;
-    }
-    .wish-mgr-list {
-      flex: 1; overflow-y: auto; min-height: 120px; max-height: 42vh;
-      border-radius: 12px; background: rgba(0,0,0,0.28);
-      border: 1px solid rgba(255,255,255,0.08); padding: 6px;
-      -webkit-overflow-scrolling: touch;
-    }
-    .wish-mgr-item {
-      display: flex; align-items: flex-start; gap: 8px;
-      padding: 10px 10px; border-radius: 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .wish-mgr-item:last-child { border-bottom: none; }
-    .wish-mgr-item .wm-body { flex: 1; min-width: 0; }
-    .wish-mgr-item .wm-text {
-      font-size: 0.84rem; color: #f1f5f9; line-height: 1.35;
-      word-break: break-word;
-    }
-    .wish-mgr-item .wm-meta {
-      font-size: 0.68rem; color: #64748b; margin-top: 4px;
-    }
-    .wish-mgr-item .wm-del {
-      flex-shrink: 0; width: 32px; height: 32px; border-radius: 8px;
-      border: 1px solid rgba(248,113,113,0.35);
-      background: rgba(127,29,29,0.3); color: #fca5a5;
-      cursor: pointer; font-size: 0.9rem;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .wish-mgr-item .wm-del:hover { background: rgba(185,28,28,0.55); }
-    .wish-mgr-item .wm-del:disabled { opacity: 0.3; cursor: not-allowed; }
-    .wish-mgr-empty {
-      padding: 24px; text-align: center; color: #64748b; font-size: 0.85rem;
-    }
-    .wish-mgr-foot {
-      margin-top: 10px; font-size: 0.7rem; color: #64748b;
-      text-align: center; line-height: 1.4;
-    }
-
     .wish-count-badge {
       font-size: 0.78rem;
       color: #a5f3fc;
@@ -2173,7 +2076,6 @@
       <button id="btn-track-next-nav" class="btn-icon" data-tip="Bài sau" aria-label="Bài sau">⏭</button>
       <button id="btn-change-music" class="btn-icon btn-music-change" data-tip="Thêm / Sửa nhạc" aria-label="Thay nhạc">🎧</button>
       <button id="btn-send-wish" class="btn-icon" data-tip="Gửi lời chúc vào thiên hà" aria-label="Gửi lời chúc">✨</button>
-      <button id="btn-wish-mgr" class="btn-icon" data-tip="Quản lý lời chúc · Xuất/Nhập" aria-label="Quản lý lời chúc">📋</button>
       <button id="btn-speed" class="btn-icon speed-btn" data-tip="Đổi tốc độ bay" aria-label="Tốc độ">
         <span class="speed-indicator">0.8×</span>
       </button>
@@ -2386,31 +2288,6 @@
     </div>
   </div>
 
-  <!-- Wish Manager modal -->
-  <div id="modal-wish-mgr" class="modal-overlay">
-    <div class="wish-mgr-card">
-      <button class="btn-close-modal" data-close="modal-wish-mgr">×</button>
-      <div class="wish-mgr-title">📋 Quản lý lời chúc</div>
-      <p class="wish-mgr-sub">Kho dữ liệu độc lập với phiên bản file HTML · Xuất JSON để backup khi đổi máy</p>
-      <div class="wish-mgr-toolbar">
-        <button type="button" id="wm-export">⬇ Xuất JSON</button>
-        <button type="button" id="wm-import">⬆ Nhập JSON</button>
-        <button type="button" id="wm-merge-old">🔄 Gộp data cũ</button>
-        <button type="button" id="wm-clear-user" class="danger">Xóa lời user</button>
-      </div>
-      <input type="file" id="wm-import-file" accept="application/json,.json" style="display:none" />
-      <div class="wish-mgr-filters" id="wm-filters">
-        <button type="button" data-filter="all" class="active">Tất cả</button>
-        <button type="button" data-filter="user">Của bạn</button>
-        <button type="button" data-filter="default">Mặc định</button>
-        <button type="button" data-filter="earth">🌍 Trái Đất</button>
-        <button type="button" data-filter="galaxy">🌌 Thiên hà</button>
-      </div>
-      <div class="wish-mgr-list" id="wm-list"></div>
-      <div class="wish-mgr-foot" id="wm-foot">Store key: thienha_wish_store</div>
-    </div>
-  </div>
-
   <!-- Toast success -->
   <div id="toast-success" class="toast-success">Lời chúc đã bay vào thiên hà ✨</div>
 
@@ -2442,16 +2319,13 @@
 
     const DAILY_LIMIT = 3;
     const ICONS = ["⭐", "✨", "💫", "🌟", "🐰", "🌸", "💖", "🌙", "☄️", "🪐", "🦄", "🍭", "🎀", "🦋", "☁️", "🧸"];
-    // ===== WishStore — key ỔN ĐỊNH, không đổi theo version HTML =====
-    // Đổi file v5 → v27 → v28 vẫn đọc cùng kho trên cùng trình duyệt/origin.
-    const WISH_STORE_KEY = 'thienha_wish_store';
-    const WISH_STORE_VERSION = 1;
-    const DAILY_LIMIT_KEY = 'thienha_daily_limit_store';
+    // Storage 1 thiên hà cố định
+    const WISHES_KEY = 'thienha_wishes_v5_chinh';
+    const OLD_WISHES_KEY = 'thienha_wishes_v5';
+    const DAILY_LIMIT_KEY = 'thienha_daily_limit_v5_chinh';
 
     /**
-     * SafeStorage — tránh crash khi document sandbox / iframe chat
-     * (SecurityError: localStorage lacks allow-same-origin)
-     * Fallback: memory Map trong session tab.
+     * SafeStorage — tránh crash sandbox/iframe
      */
     const __memStore = new Map();
     let __lsOk = null;
@@ -2464,7 +2338,7 @@
         __lsOk = true;
       } catch (e) {
         __lsOk = false;
-        console.warn('[SafeStorage] localStorage bị chặn (sandbox/iframe). Dùng bộ nhớ tạm trong tab.');
+        console.warn('[SafeStorage] localStorage bị chặn. Dùng bộ nhớ tạm.');
       }
       return __lsOk;
     }
@@ -2489,29 +2363,11 @@
           if (canUseLocalStorage()) window.localStorage.removeItem(key);
         } catch (e) {}
         __memStore.delete(key);
-      },
-      key: function (i) {
-        try {
-          if (canUseLocalStorage()) return window.localStorage.key(i);
-        } catch (e) {}
-        return Array.from(__memStore.keys())[i] || null;
-      },
-      get length() {
-        try {
-          if (canUseLocalStorage()) return window.localStorage.length;
-        } catch (e) {}
-        return __memStore.size;
       }
     };
-    // Legacy keys (migrate một lần)
-    const LEGACY_WISH_KEYS = [
-      'thienha_wishes_v5_chinh',
-      'thienha_wishes_v5',
-      'thienha_wishes_v5_global'
-    ];
 
     // ========== SUPABASE CONFIG ==========
-    // URL: chỉ domain project — KHÔNG thêm /rest/v1/
+    // URL: chỉ domain — KHÔNG thêm /rest/v1/
     const SUPABASE_URL = 'https://nyzmouelglfthynhgjef.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55em1vdWVsZ2xmdGh5bmhnamVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0NDQ0NTgsImV4cCI6MjEwNzAyMDQ1OH0.HV9QioCu4IZdu2gcny7TFZF7Gwmt4iPpmIXZ2kt6IQE';
     const CLOUD_TABLE = 'wishes';
@@ -2570,6 +2426,30 @@
         cloudEnabled = false;
         return false;
       }
+    }
+
+    function normalizeWish(w) {
+      if (!w || typeof w !== 'object') return null;
+      var text = String(w.text || '').trim().slice(0, 120);
+      if (!text) return null;
+      var out = {
+        id: w.id || ('u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)),
+        text: text,
+        author: String(w.author || '').trim().slice(0, 40),
+        createdAt: typeof w.createdAt === 'number' ? w.createdAt : (w.created_at ? Number(w.created_at) : Date.now()),
+        target: (w.target === 'earth') ? 'earth' : 'galaxy'
+      };
+      if (w.clientId || w.client_id) out.clientId = String(w.clientId || w.client_id);
+      return out;
+    }
+
+    function mergeWishLists(a, b) {
+      var map = {};
+      (a || []).concat(b || []).forEach(function (w) {
+        var n = normalizeWish(w);
+        if (n && n.id) map[n.id] = n;
+      });
+      return Object.keys(map).map(function (k) { return map[k]; });
     }
 
     function rowToWish(row) {
@@ -2647,14 +2527,12 @@
       }
     }
 
-    function applyCloudWishLocally(wish, opts) {
-      opts = opts || {};
+    function applyCloudWishLocally(wish) {
       if (!wish || !wish.id) return;
-      const exists = (currentWishes || []).some(function (w) { return w && w.id === wish.id; });
-      if (exists) return;
+      if ((currentWishes || []).some(function (w) { return w && w.id === wish.id; })) return;
       currentWishes.push(wish);
       try { saveWishes(currentWishes); } catch (e) {}
-      if (opts.sprite !== false) ensureWishSprite(wish);
+      ensureWishSprite(wish);
       if (typeof updateWishCountUI === 'function') updateWishCountUI();
       if (typeof updateEarthPanelStats === 'function') updateEarthPanelStats();
     }
@@ -2670,21 +2548,17 @@
       realtimeChannel = supabaseClient
         .channel('wishes-realtime')
         .on('postgres_changes', {
-          event: 'INSERT',
-          schema: 'public',
-          table: CLOUD_TABLE
+          event: 'INSERT', schema: 'public', table: CLOUD_TABLE
         }, function (payload) {
           const w = rowToWish(payload.new);
           if (!w) return;
-          applyCloudWishLocally(w, { sprite: true });
+          applyCloudWishLocally(w);
           if (w.clientId && w.clientId !== getClientId() && typeof showToast === 'function') {
             showToast('Có lời chúc mới từ thiên hà ✨');
           }
         })
         .on('postgres_changes', {
-          event: 'DELETE',
-          schema: 'public',
-          table: CLOUD_TABLE
+          event: 'DELETE', schema: 'public', table: CLOUD_TABLE
         }, function (payload) {
           const id = payload.old && payload.old.id;
           if (!id) return;
@@ -2718,7 +2592,6 @@
       if (!el) return;
       if (!isCloudConfigured()) {
         el.textContent = 'Local';
-        el.title = 'Chưa cấu hình Supabase';
         el.dataset.mode = 'local';
         return;
       }
@@ -2735,12 +2608,11 @@
       if (status === 'SUBSCRIBED') {
         el.textContent = 'Cloud · Live';
         el.dataset.mode = 'live';
-        el.title = 'Supabase realtime — mọi người cùng thấy lời chúc';
+        el.title = 'Supabase realtime';
         return;
       }
       el.textContent = 'Cloud';
       el.dataset.mode = 'cloud';
-      el.title = 'Đã kết nối Supabase';
     }
 
     async function syncWishesFromCloud() {
@@ -2753,7 +2625,7 @@
         const defaults = (currentWishes || []).filter(function (w) {
           return w && w.id && String(w.id).indexOf('d') === 0;
         });
-        let merged = mergeWishLists(defaults, remote);
+        var merged = mergeWishLists(defaults, remote);
         const remoteIds = {};
         remote.forEach(function (w) { if (w && w.id) remoteIds[w.id] = true; });
         (currentWishes || []).forEach(function (w) {
@@ -2770,7 +2642,6 @@
         }
         if (typeof updateWishCountUI === 'function') updateWishCountUI();
         if (typeof updateEarthPanelStats === 'function') updateEarthPanelStats();
-        if (typeof renderWishManagerList === 'function') renderWishManagerList();
       } finally {
         cloudSyncing = false;
         updateCloudStatusUI(realtimeChannel ? 'SUBSCRIBED' : '');
@@ -2913,126 +2784,40 @@
     currentTheme = THEME_PRESETS.golden;
     applyThemeToDOM(currentTheme);
 
-    /**
-     * WishStore (Data layer) — tách khỏi version file
-     * Schema: { v, wishes: [{id,text,author,createdAt,target?}], updatedAt }
-     */
-    function normalizeWish(w) {
-      if (!w || typeof w !== 'object') return null;
-      const text = String(w.text || '').trim().slice(0, 120);
-      if (!text) return null;
-      const out = {
-        id: w.id || ('u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)),
-        text: text,
-        author: String(w.author || '').trim().slice(0, 40),
-        createdAt: typeof w.createdAt === 'number' ? w.createdAt : Date.now(),
-        target: w.target === 'earth' ? 'earth' : 'galaxy'
-      };
-      if (w.clientId) out.clientId = String(w.clientId);
-      return out;
-    }
-
-    function mergeWishLists(base, extra) {
-      const map = new Map();
-      (base || []).forEach(function (w) {
-        const n = normalizeWish(w);
-        if (n) map.set(n.id, n);
-      });
-      (extra || []).forEach(function (w) {
-        const n = normalizeWish(w);
-        if (n && !map.has(n.id)) map.set(n.id, n);
-      });
-      return Array.from(map.values());
-    }
-
-    function readStoreRaw() {
+    /** Migrate data cũ → key cố định */
+    function migrateOldWishesIfNeeded() {
       try {
-        const raw = safeStorage.getItem(WISH_STORE_KEY);
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        if (parsed && Array.isArray(parsed.wishes)) return parsed;
-        if (Array.isArray(parsed)) return { v: WISH_STORE_VERSION, wishes: parsed, updatedAt: Date.now() };
-      } catch (e) {}
-      return null;
-    }
-
-    function writeStore(wishes) {
-      const payload = {
-        v: WISH_STORE_VERSION,
-        wishes: (wishes || []).map(normalizeWish).filter(Boolean),
-        updatedAt: Date.now()
-      };
-      safeStorage.setItem(WISH_STORE_KEY, JSON.stringify(payload));
-      return payload;
-    }
-
-    /** Gộp mọi key legacy + multi-galaxy cũ vào store chính */
-    function migrateAllLegacyWishes() {
-      let merged = [];
-      const store = readStoreRaw();
-      if (store && store.wishes && store.wishes.length) {
-        merged = mergeWishLists(merged, store.wishes);
-      }
-      LEGACY_WISH_KEYS.forEach(function (key) {
-        try {
-          const raw = safeStorage.getItem(key);
-          if (!raw) return;
-          const parsed = JSON.parse(raw);
-          const list = Array.isArray(parsed) ? parsed : (parsed && parsed.wishes);
-          if (list && list.length) merged = mergeWishLists(merged, list);
-        } catch (e) {}
-      });
-      // Multi-galaxy keys: thienha_wishes_v5_*
-      try {
-        for (let i = 0; i < safeStorage.length; i++) {
-          const k = safeStorage.key(i);
-          if (!k || k === WISH_STORE_KEY) continue;
-          if (k.indexOf('thienha_wishes') === 0) {
-            try {
-              const raw = safeStorage.getItem(k);
-              const parsed = JSON.parse(raw);
-              const list = Array.isArray(parsed) ? parsed : (parsed && parsed.wishes);
-              if (list && list.length) merged = mergeWishLists(merged, list);
-            } catch (e2) {}
-          }
+        if (safeStorage.getItem(WISHES_KEY)) return;
+        const oldRaw = safeStorage.getItem(OLD_WISHES_KEY);
+        if (!oldRaw) return;
+        const parsed = JSON.parse(oldRaw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          safeStorage.setItem(WISHES_KEY, oldRaw);
         }
       } catch (e) {}
-
-      if (!merged.length) {
-        // Lần đầu hoàn toàn trống → seed default (chỉ khi chưa có store)
-        if (!store) {
-          writeStore(DEFAULT_WISHES.map(normalizeWish));
-          return loadWishesFromStore();
-        }
-        return store.wishes.map(normalizeWish).filter(Boolean);
-      }
-      writeStore(merged);
-      return merged;
     }
-
-    function loadWishesFromStore() {
-      const store = readStoreRaw();
-      if (store && store.wishes && store.wishes.length) {
-        return store.wishes.map(normalizeWish).filter(Boolean);
-      }
-      return migrateAllLegacyWishes();
-    }
+    migrateOldWishesIfNeeded();
 
     function loadWishes() {
-      return loadWishesFromStore();
+      try {
+        const raw = safeStorage.getItem(WISHES_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (e) {}
+      return [...DEFAULT_WISHES];
     }
 
     function saveWishes(list) {
       try {
-        writeStore(list);
+        safeStorage.setItem(WISHES_KEY, JSON.stringify(list));
       } catch (e) {
-        console.warn('Không lưu được WishStore', e);
-        throw e;
+        console.warn('Không lưu được localStorage', e);
       }
     }
 
     let currentWishes = loadWishes();
-    let wishMgrFilter = 'all';
 
     function updateWishCountUI() {
       const el = document.getElementById('wish-count-text');
@@ -3144,14 +2929,6 @@
     let shootingStars = []; // sao băng
     let blackHoleRoot = null;   // hố đen ngoài hệ Mặt Trời
     let blackHoleMat = null;    // ShaderMaterial uniforms
-    // —— Gravitational Lensing (Visual layer – tách logic) ——
-    let lensRT = null;          // scene capture
-    let lensScene = null;
-    let lensCamera = null;
-    let lensMaterial = null;
-    let lensEnabled = true;     // tắt nếu GPU yếu
-    const LENS_TMP = new THREE.Vector3();
-    const LENS_NDC = new THREE.Vector3();
     let lastCollisionCheck = 0;
     let isDragging = false;
     let previousMouse = { x: 0, y: 0 };
@@ -3176,8 +2953,9 @@
     const PERF = {
       // DPR cap chặt hơn → fill-rate giảm mạnh trên mobile/hiDPI
       dprCap: isMobile ? 1.15 : 1.5,
-      starCount: isMobile ? 600 : 1800,
-      dustCount: isMobile ? 140 : 380,
+      // Sao nền + bụi: nhiều đốm sáng toàn vũ trụ (hố đen shader giữ thưa riêng)
+      starCount: isMobile ? 1600 : 4800,
+      dustCount: isMobile ? 320 : 850,
       asteroidCount: 0, // tắt thiên thạch
       // Khi frame > 28ms (~35fps) → giảm tần suất update phụ
       lagThresholdMs: 28,
@@ -4082,7 +3860,7 @@
         size: isMobile ? 1.6 : 1.25,
         vertexColors: true,
         transparent: true,
-        opacity: 0.88,
+        opacity: 0.92,
         sizeAttenuation: false, // starfield xa – tắt attenuation rẻ hơn
         depthWrite: false,
         blending: THREE.AdditiveBlending
@@ -5188,9 +4966,10 @@
       }
     }
 
-    /** Tạo 1 sao băng bay ngang vũ trụ */
+    /** Tạo 1 sao băng — thưa, ngắn, dịu (không dày đặc) */
     function spawnShootingStar() {
-      if (shootingStars.length > (isMobile ? 2 : 4)) return;
+      // Tối đa 1 vệt cùng lúc (mobile/desktop) — tránh trời đầy vệt
+      if (shootingStars.length >= 1) return;
       const start = new THREE.Vector3(
         (Math.random() - 0.5) * 280,
         40 + Math.random() * 80,
@@ -5198,32 +4977,38 @@
       );
       const dir = new THREE.Vector3(
         (Math.random() - 0.5) * 2,
-        -0.3 - Math.random() * 0.5,
+        -0.25 - Math.random() * 0.35,
         (Math.random() - 0.5) * 2
       ).normalize();
-      const speed = 1.8 + Math.random() * 2.2;
+      // Chậm, không kéo dài cảm giác “mưa sao”
+      const speed = 0.38 + Math.random() * 0.42;
 
-      // Head
-      const headGeo = new THREE.SphereGeometry(0.6, 6, 6);
-      const headMat = new THREE.MeshBasicMaterial({ color: 0xfff8e0 });
+      const headGeo = new THREE.SphereGeometry(0.28, 6, 6);
+      const headMat = new THREE.MeshBasicMaterial({
+        color: 0xfff8e0,
+        transparent: true,
+        opacity: 0.75,
+        depthWrite: false
+      });
       const head = new THREE.Mesh(headGeo, headMat);
       head.position.copy(start);
       scene.add(head);
 
-      // Trail (line)
-      const trailLen = 18;
+      // Trail ngắn hơn → vệt thưa, gọn
+      const trailLen = 16;
+      const step = 0.48;
       const positions = new Float32Array(trailLen * 3);
       for (let i = 0; i < trailLen; i++) {
-        positions[i * 3] = start.x - dir.x * i * 1.2;
-        positions[i * 3 + 1] = start.y - dir.y * i * 1.2;
-        positions[i * 3 + 2] = start.z - dir.z * i * 1.2;
+        positions[i * 3] = start.x - dir.x * i * step;
+        positions[i * 3 + 1] = start.y - dir.y * i * step;
+        positions[i * 3 + 2] = start.z - dir.z * i * step;
       }
       const trailGeo = new THREE.BufferGeometry();
       trailGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       const trailMat = new THREE.LineBasicMaterial({
         color: 0xffe8a0,
         transparent: true,
-        opacity: 0.7,
+        opacity: 0.38,
         blending: THREE.AdditiveBlending,
         depthWrite: false
       });
@@ -5236,7 +5021,8 @@
         dir,
         speed,
         life: 1.0,
-        decay: 0.008 + Math.random() * 0.006
+        // Tàn nhanh hơn một chút → ít chồng vệt
+        decay: 0.0045 + Math.random() * 0.0035
       });
     }
 
@@ -5493,11 +5279,11 @@
     function isEarthFocused() {
       return !!(focusTarget && focusTarget.userData && focusTarget.userData.isEarth);
     }
-    function isMoonFocused() {
-      return !!(focusTarget && focusTarget.userData && focusTarget.userData.isMoon);
-    }
     function isBlackHoleFocused() {
       return !!(focusTarget && focusTarget.userData && focusTarget.userData.isBlackHole);
+    }
+    function isMoonFocused() {
+      return !!(focusTarget && focusTarget.userData && focusTarget.userData.isMoon);
     }
 
     /** Cập nhật HUD độ cao “vệ tinh” (km mô phỏng) */
@@ -5804,7 +5590,7 @@
         size: isMobile ? 0.5 : 0.38,
         vertexColors: true,
         transparent: true,
-        opacity: 0.7,
+        opacity: 0.72,
         sizeAttenuation: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending
@@ -5824,7 +5610,7 @@
       const BH_POS = new THREE.Vector3(BH_DIST * 0.78, BH_DIST * 0.05, -BH_DIST * 0.60);
       const EARTH_R = 2.35;
       const worldScale = EARTH_R; // shader r=1 → world
-      const N_STEPS = isMobile ? 56 : 88;
+      const N_STEPS = isMobile ? 56 : 96;
       const bhFocusDist = isMobile ? 11 : 13;
 
       const vert = [
@@ -5841,26 +5627,27 @@
         'varying vec3 vWorldPos;',
         'uniform vec3 uBHPos;',
         'uniform float uTime;',
+        'uniform float uStarTime;',  // riêng nền sao lensing — chậm hơn đĩa
         'uniform float uDiskGain;',
         'uniform float uStarGain;',
         'uniform float uDiskPhase;',
         'uniform float uSize;',
-        '',
-        'const float DISK_INNER = 1.75;',
-        'const float DISK_OUTER = 10.20;',
-        'const float DISK_INCL = 0.28;',  // nghiêng vừa — thấy Doppler 2 phía
-        'const float DISK_ROLL0 = 0.08;',
-        'const float DISK_OPACITY = 0.92;',
-        'const float DISK_TEMP = 7800.0;',  // inner hotter (K)
-        'const float DOPPLER_MIX = 0.82;',
-        'const float DISK_BEAM = 3.10;',
-        'const float DISK_SPEED = 4.60;',
-        'const float DISK_WIND = 7.40;',
-        'const float DISK_CONTRAST = 1.85;',
-        'const float EXPOSURE = 1.72;',
-        'const float DILATION_MIN = 0.18;',
-        'const float DISK_THICK = 0.065;',  // bề dày đĩa (scale r)
+        'uniform float uNear;',  // 0 = nhìn từ xa (hệ MT), 1 = zoom gần hố đen
 
+        '',
+        'const float DISK_INNER = 1.80;',
+        'const float DISK_OUTER = 9.50;',
+        'const float DISK_INCL = 0.22;',  // gần nằm ngang (XZ)
+        'const float DISK_ROLL0 = 0.05;',
+        'const float DISK_OPACITY = 0.78;',
+        'const float DISK_TEMP = 3400.0;',  // ấm dịu, bớt vàng chói
+        'const float DOPPLER_MIX = 0.55;',
+        'const float DISK_BEAM = 2.0;',
+        'const float DISK_SPEED = 0.32;',  // xoay chậm hơn trong shader
+        'const float DISK_WIND = 0.75;',
+        'const float DISK_CONTRAST = 1.25;',
+        'const float EXPOSURE = 0.95;',  // bớt chói
+        'const float DILATION_MIN = 0.22;',
         'const int N_STEPS = __NSTEPS__;',
         '',
         'float hash21(vec2 p) {',
@@ -5886,18 +5673,36 @@
         '  return vec3(r, g, b);',
         '}',
         'vec3 stars(vec3 d) {',
+        '  // Lớp dày — nền bị bẻ cong phải thấy rõ (gravitational lensing)',
+        '  vec3 col = vec3(0.0);',
         '  vec2 sph = vec2(atan(d.x, -d.z), asin(clamp(d.y, -1.0, 1.0)));',
-        '  vec2 g = sph * 52.0;',
-        '  vec2 id = floor(g);',
-        '  float h = hash21(id);',
-        '  if (h < 0.935) return vec3(0.0);',
-        '  vec2 f = fract(g) - 0.5;',
-        '  vec2 off = (vec2(hash21(id + 17.3), hash21(id + 31.7)) - 0.5) * 0.65;',
-        '  float spark = smoothstep(0.085, 0.0, length(f - off));',
-        '  float tw = 0.65 + 0.35 * sin(uTime * (0.4 + 2.2 * hash21(id + 5.1)) + 37.0 * h);',
-        '  vec3 tint = mix(vec3(1.0, 0.80, 0.55), vec3(0.70, 0.82, 1.0), hash21(id + 2.9));',
-        '  float bright = mix(0.45, 2.6, smoothstep(0.935, 1.0, h));',
-        '  return tint * spark * tw * bright;',
+        '  // Layer 1 — sao rất thưa, dịu',
+        '  vec2 g1 = sph * 36.0;',
+        '  vec2 id1 = floor(g1);',
+        '  float h1 = hash21(id1);',
+        '  if (h1 > 0.92) {',
+        '    vec2 f = fract(g1) - 0.5;',
+        '    vec2 off = (vec2(hash21(id1 + 17.3), hash21(id1 + 31.7)) - 0.5) * 0.55;',
+        '    float spark = smoothstep(0.10, 0.0, length(f - off));',
+        '    float tw = 0.55 + 0.35 * sin(uStarTime * (0.05 + 0.18 * hash21(id1 + 5.1)) + 37.0 * h1);',
+        '    vec3 tint = mix(vec3(1.0, 0.82, 0.55), vec3(0.72, 0.85, 1.0), hash21(id1 + 2.9));',
+        '    float bright = mix(0.55, 1.8, smoothstep(0.92, 1.0, h1));',
+        '    col += tint * spark * tw * bright;',
+        '  }',
+        '  // Layer 2 — đốm nhỏ thưa (lensing vẫn thấy, không dày)',
+        '  vec2 g2 = sph * 72.0 + 13.7;',
+        '  vec2 id2 = floor(g2);',
+        '  float h2s = hash21(id2 + 9.1);',
+        '  if (h2s > 0.96) {',
+        '    vec2 f2 = fract(g2) - 0.5;',
+        '    float spark2 = smoothstep(0.08, 0.0, length(f2));',
+        '    vec3 tint2 = mix(vec3(0.95, 0.9, 0.75), vec3(0.65, 0.78, 1.0), hash21(id2 + 4.2));',
+        '    col += tint2 * spark2 * mix(0.25, 0.9, smoothstep(0.96, 1.0, h2s));',
+        '  }',
+        '  // Soft milky haze — làm biến dạng không gian dễ thấy hơn',
+        '  float haze = 0.04 + 0.03 * sin(sph.x * 6.0 + uStarTime * 0.008) * sin(sph.y * 4.0);',
+        '  col += vec3(0.12, 0.14, 0.22) * haze;',
+        '  return col;',
         '}',
         'void main() {',
         '  vec3 ro = cameraPosition - uBHPos;',
@@ -5920,26 +5725,33 @@
         '  float spd = abs(DISK_SPEED);',
         '  vec3 Lvec = cross(ro, rd);',
         '  float h2 = dot(Lvec, Lvec);',
+        '  // impact parameter — gần photon sphere (~1.5) → lensing mạnh + Einstein ring',
+        '  float bImpact = length(cross(normalize(rd), ro));',
         '  vec3 x = ro;',
         '  vec3 v = rd;',
         '  vec3 emitc = vec3(0.0);',
         '  float trans = 1.0;',
         '  bool captured = false;',
+        '  float minR = 1e6;',
         '  float sPrev = dot(x, n);',
         '  vec3 xPrev = x;',
+        '  // Hệ số bẻ cong — 1.5 = Schwarzschild; 1.85 = nhấn mạnh visual lensing',
+        '  float Gfac = 1.85;',
         '  for (int i = 0; i < N_STEPS; i++) {',
         '    float r2 = dot(x, x);',
-        '    if (r2 < 1.02) { captured = true; break; }',
+        '    // Bóng đen đặc chạm mép đĩa (DISK_INNER = 1.80)',
+        '    if (r2 < 1.80 * 1.80) { captured = true; break; }',
         '    if (r2 > Zfar * Zfar) break;',
         '    float r = sqrt(r2);',
-        '    float dt = clamp(0.12 * r, 0.02, 1.45);',
-        // Schwarzschild light deflection (stronger = visible spacetime warp)
-        '    vec3 a = -1.62 * h2 * x / (r2 * r2 * r + 1e-12);',
+        '    minR = min(minR, r);',
+        '    float dt = clamp(0.12 * r, 0.02, 1.4);',
+        '    vec3 a = -Gfac * h2 * x / (r2 * r2 * r + 1e-12);',
         '    v += a * (0.5 * dt);',
         '    x += v * dt;',
         '    r2 = dot(x, x);',
         '    r = sqrt(max(r2, 1e-8));',
-        '    a = -1.62 * h2 * x / (r2 * r2 * r + 1e-12);',
+        '    minR = min(minR, r);',
+        '    a = -Gfac * h2 * x / (r2 * r2 * r + 1e-12);',
         '    v += a * (0.5 * dt);',
         '    float s = dot(x, n);',
         '    if (s * sPrev < 0.0 && trans > 0.012) {',
@@ -5947,70 +5759,62 @@
         '      vec3 xc = mix(xPrev, x, tc);',
         '      float rc = length(xc);',
         '      if (rc > rin && rc < rout) {',
-        // Radial band: ISCO bright → outer fade
-        '        float band = smoothstep(rin, rin * 1.18, rc)',
-        '                   * (1.0 - smoothstep(rout * 0.62, rout, rc));',
-        // Vertical thin disk (Gaussian about midplane)
-        '        float hDisk = max(rc * DISK_THICK, 0.02);',
-        '        float vert = exp(-0.5 * (sPrev * sPrev) / (hDisk * hDisk));',
+        '        float band = smoothstep(rin, rin * 1.22, rc)',
+        '                   * (1.0 - smoothstep(rout * 0.68, rout, rc));',
         '        float phi = atan(dot(xc, e2), dot(xc, e1));',
         '        float turns = phi / 6.28318530718;',
-        '        float kep = pow(rin / max(rc, rin), 1.5);',
-        '        float gloc = sqrt(max(1.0 - 1.5 / max(rc, 1.05), 0.02));',
-        // Multi-arm spiral + turbulence
-        '        float swirl = rc * DISK_WIND * 0.11',
+        '        float kep = pow(rin / rc, 1.5);',
+        '        float gloc = sqrt(max(1.0 - 1.5 / rc, 0.02));',
+        '        float swirl = rc * DISK_WIND * 0.12',
         '                    - uTime * kep * spd * gloc * dil * sdir',
-        '                    - uDiskPhase * 2.2;',
-        '        float n1 = vnoiseWrapY(vec2(rc * 3.2, turns * 22.0 + swirl * 3.2), 22.0);',
-        '        float n2 = vnoiseWrapY(vec2(rc * 1.15, turns * 11.0 + swirl * 1.6 + 5.0), 11.0);',
-        '        float n3 = vnoiseWrapY(vec2(rc * 0.55, turns * 5.0 + swirl * 0.7 + 13.0), 5.0);',
-        '        float streaks = n1 * 0.50 + n2 * 0.32 + n3 * 0.18;',
-        '        streaks = 0.22 + DISK_CONTRAST * streaks * streaks;',
-        // Spiral arms (2–3 arms)
-        '        float arms = 0.55 + 0.45 * pow(0.5 + 0.5 * sin(turns * 18.8496 + swirl * 0.85 + rc * 0.4), 2.0);',
-        '        streaks *= arms;',
-        // Keplerian Doppler beaming
+        '                    - uDiskPhase * 2.5;',
+        '        float streaks = vnoiseWrapY(vec2(rc * 2.8, turns * 19.0 + swirl * 3.0), 19.0) * 0.65',
+        '                      + vnoiseWrapY(vec2(rc * 1.0, turns * 9.0 + swirl * 1.5 + 7.0), 9.0) * 0.35;',
+        '        streaks = 0.30 + DISK_CONTRAST * streaks * streaks;',
         '        vec3 gasdir = normalize(cross(n, xc)) * sdir;',
         '        float beta = clamp(inversesqrt(max(2.0 * (rc - 1.0), 0.2)), 0.0, 0.99);',
         '        float gfac = gloc / max(1.0 + beta * dot(gasdir, normalize(v)), 0.05);',
         '        gfac = mix(1.0, gfac, DOPPLER_MIX);',
-        // Temperature profile: hot near ISCO
-        '        float xpr = max(1.0 - sqrt(rin / max(rc, rin)), 0.0);',
-        '        float tprof = pow(rin / max(rc, rin), 0.85) * pow(max(xpr, 0.001), 0.22) / 0.45;',
-        '        tprof = clamp(tprof, 0.12, 2.8);',
+        '        float xpr = max(1.0 - sqrt(rin / rc), 0.0);',
+        '        float tprof = pow(rin / rc, 0.75) * pow(xpr, 0.25) / 0.488;',
         '        vec3 cbb = blackbody(DISK_TEMP * tprof * gfac);',
-        // Inner rim extra glow (photon-sphere adjacent)
-        '        float iscoGlow = smoothstep(rin * 1.35, rin, rc) * 1.35;',
-        '        cbb += vec3(1.0, 0.75, 0.45) * iscoGlow * 0.35;',
-        '        float boost = pow(max(gfac, 0.15), DISK_BEAM);',
-        '        float density = band * streaks * vert;',
-        '        density = clamp(density, 0.0, 1.8);',
-        '        emitc += trans * cbb * (uDiskGain * 2.55 * density * tprof * tprof * boost);',
-        '        trans *= 1.0 - clamp(DISK_OPACITY * density * 0.92, 0.0, 0.97);',
+        '        float boost = pow(gfac, DISK_BEAM);',
+        '        float density = band * streaks;',
+        '        emitc += trans * cbb * (uDiskGain * 1.45 * density * tprof * tprof * boost);',
+        '        trans *= 1.0 - clamp(DISK_OPACITY * density, 0.0, 1.0);',
         '      }',
         '    }',
         '    sPrev = s;',
         '    xPrev = x;',
         '  }',
-        '  if (!captured && dot(x, x) < 4.0) captured = true;',
-        '  if (captured) {',
+        '  // nearF: 0 = hệ MT; 1 = sát hố đen',
+        '  float nearF = clamp(uNear, 0.0, 1.0);',
+        '  // === VÒNG ĐEN ĐẶC chạm mép đĩa — VẼ ĐEN (không discard) ===',
+        '  // Trước đây discard + Additive → nhìn xuyên thấy Mặt Trời. Nay output RGB=0, a=1.',
+        '  const float SHADOW_R = 1.80;',
+        '  bool inShadow = captured || (minR < SHADOW_R) || (bImpact < SHADOW_R);',
+        '  if (inShadow) {',
         '    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);',
         '    return;',
         '  }',
+        '',
+        '  // === Đĩa + sao lensing (chỉ ngoài bóng) ===',
         '  vec3 d = normalize(v);',
-        // Lensed starfield + chromatic (space warp look)
-        '  vec3 bgR = stars(normalize(d + vec3(0.0015, 0.0, 0.0))) * uStarGain * 0.26;',
-        '  vec3 bgG = stars(d) * uStarGain * 0.26;',
-        '  vec3 bgB = stars(normalize(d - vec3(0.0015, 0.0, 0.0))) * uStarGain * 0.26;',
-        '  vec3 bg = vec3(bgR.r, bgG.g, bgB.b);',
-        // Einstein ring: photon-sphere caustic (r ~ 1.5–3.2 Schwarzschild)
-        '  float impact = length(cross(ro, rd));',
-        '  float einstein = smoothstep(2.55, 2.95, impact) * (1.0 - smoothstep(3.15, 3.55, impact));',
-        '  einstein *= 0.35 + 0.25 * sin(uTime * 0.5 + impact * 3.0);',
-        '  vec3 ringCol = vec3(1.0, 0.85, 0.62) * einstein * 0.55 * uDiskGain;',
-        '  vec3 col = bg * trans + (vec3(1.0) - exp(-emitc * EXPOSURE)) + ringCol * trans;',
-        '  float alpha = clamp(length(emitc) * 2.2 + (1.0 - trans) + einstein * 0.35, 0.0, 1.0);',
-        '  if (alpha < 0.025) discard;',
+        '  float starVis = mix(0.4, 1.2, nearF);',
+        '  float outsideShadow = smoothstep(SHADOW_R, SHADOW_R + 0.1, minR);',
+        '  outsideShadow *= smoothstep(SHADOW_R, SHADOW_R + 0.1, bImpact);',
+        '  vec3 bg = stars(d) * uStarGain * starVis * outsideShadow;',
+        '  float edgeGlow = exp(-pow(minR - (SHADOW_R + 0.18), 2.0) * 14.0) * mix(0.18, 0.45, nearF) * outsideShadow;',
+        '  bg += vec3(0.85, 0.72, 0.5) * edgeGlow * uStarGain * 0.65;',
+        '  float warpHaze = exp(-pow(minR - 2.5, 2.0) * 1.6) * mix(0.08, 0.15, nearF) * outsideShadow;',
+        '  bg += vec3(0.3, 0.4, 0.75) * warpHaze;',
+        '  float diskVis = mix(0.45, 1.0, nearF);',
+        '  vec3 diskCol = (vec3(1.0) - exp(-emitc * EXPOSURE * diskVis));',
+        '  vec3 col = bg * trans + diskCol;',
+        '  float bright = max(col.r, max(col.g, col.b));',
+        '  // Ngoài đĩa / ngoài bóng: trong suốt (không phủ nền)',
+        '  if (bright < 0.035) discard;',
+        '  float alpha = smoothstep(0.035, 0.12, bright);',
         '  gl_FragColor = vec4(col, alpha);',
         '}'
       ];
@@ -6021,18 +5825,22 @@
         uniforms: {
           uBHPos: { value: BH_POS.clone() },
           uTime: { value: 0 },
-          uDiskGain: { value: 1.85 },
-          uStarGain: { value: 0.55 },
+          uStarTime: { value: 0 },
+          uDiskGain: { value: 1.15 },
+          uStarGain: { value: 1.2 },
           uDiskPhase: { value: 0 },
-          uSize: { value: worldScale }
+          uSize: { value: worldScale },
+          uNear: { value: 0.0 }
         },
         vertexShader: vert,
         fragmentShader: frag,
         transparent: true,
-        depthWrite: false,
+        // depthWrite: bóng đen ghi depth → che Mặt Trời / sao phía sau (không nhìn xuyên)
+        depthWrite: true,
         depthTest: true,
-        side: THREE.DoubleSide, // ray qua bề mặt volume
-        blending: THREE.NormalBlending
+        side: THREE.DoubleSide,
+        blending: THREE.NormalBlending,
+        premultipliedAlpha: false
       });
 
       blackHoleRoot = new THREE.Group();
@@ -6040,26 +5848,40 @@
       blackHoleRoot.position.copy(BH_POS);
       blackHoleRoot.frustumCulled = false;
 
-      // Lõi đen dự phòng (silhouette)
+      // Lõi đen dự phòng (opaque) — khớp DISK_INNER; shader đã vẽ đen đặc (NormalBlending).
+      const CORE_RS = 1.80;
+      const coreR = worldScale * CORE_RS;
+      const coreMat = new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        transparent: false,
+        opacity: 1.0,
+        depthWrite: true,
+        depthTest: true,
+        fog: false,
+        toneMapped: false,
+        side: THREE.FrontSide
+      });
       const core = new THREE.Mesh(
-        new THREE.SphereGeometry(worldScale * 0.98, 24, 18),
-        new THREE.MeshBasicMaterial({ color: 0x000000 })
+        new THREE.SphereGeometry(coreR, isMobile ? 48 : 72, isMobile ? 36 : 56),
+        coreMat
       );
+      core.visible = true;
       core.frustumCulled = false;
-      // minZoom gán sau khi biết volR (bên dưới sync)
+      core.renderOrder = -1; // opaque pass, trước mọi lớp additive
       core.userData = {
         isBlackHole: true,
         planetName: 'Hố đen',
         focusDistance: bhFocusDist,
         minZoom: worldScale * 10.2 * 1.12,
         maxZoom: isMobile ? 90 : 120,
-        volumeRadius: worldScale * 10.2,
-        focusRoot: core
+        volumeRadius: worldScale * 9.5,
+        focusRoot: core,
+        coreRs: CORE_RS
       };
       blackHoleRoot.add(core);
 
       // Volume raymarch — bao đĩa; camera KHÔNG được vào trong volume (ray sai hướng)
-      const volR = worldScale * 10.2;
+      const volR = worldScale * 9.5;
       // minZoom > volR: zoom sát vẫn thấy, không “chui” vào mesh volume → mất hình
       const bhMinZoom = volR * 1.12;
       const bhMaxZoom = isMobile ? 90 : 120;
@@ -6096,178 +5918,9 @@
       scene.add(blackHoleRoot);
       blackHoleRoot.userData.core = core;
       blackHoleRoot.userData.volume = volume;
+
       return blackHoleRoot;
     }
-
-
-    /**
-     * GravitationalLensingPass — Visual only (MVC: Presentation)
-     * Lensing trọng lực nhẹ quanh VÀNH NGOÀI hố đen:
-     * 1) render scene → RT
-     * 2) UV bị kéo nhẹ về tâm (deflection ~ rim × 1/r) — không warp lõi / toàn màn
-     * Không đụng FSM / focus / data wishes.
-     */
-    function initGravitationalLensing() {
-      if (!renderer) return;
-      const w = Math.max(2, renderer.domElement.width || window.innerWidth);
-      const h = Math.max(2, renderer.domElement.height || window.innerHeight);
-      const scale = isMobile ? 0.45 : 0.65;
-      const rw = Math.max(2, Math.floor(w * scale));
-      const rh = Math.max(2, Math.floor(h * scale));
-      if (lensRT) {
-        try { lensRT.dispose(); } catch (e) {}
-      }
-      lensRT = new THREE.WebGLRenderTarget(rw, rh, {
-        minFilter: THREE.LinearFilter,
-        magFilter: THREE.LinearFilter,
-        format: THREE.RGBAFormat,
-        depthBuffer: true,
-        stencilBuffer: false
-      });
-      if (!lensCamera) lensCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-      if (!lensScene) lensScene = new THREE.Scene();
-
-      const vert = [
-        'varying vec2 vUv;',
-        'void main() {',
-        '  vUv = uv;',
-        '  gl_Position = vec4(position.xy, 0.0, 1.0);',
-        '}'
-      ].join('\n');
-
-      const frag = [
-        'precision highp float;',
-        'uniform sampler2D tDiffuse;',
-        'uniform vec2 uBHScreen;',
-        'uniform float uRadius;',
-        'uniform float uStrength;',
-        'uniform float uEnabled;',
-        'varying vec2 vUv;',
-        'void main() {',
-        '  if (uEnabled < 0.5) {',
-        '    gl_FragColor = texture2D(tDiffuse, vUv);',
-        '    return;',
-        '  }',
-        '  vec2 delta = vUv - uBHScreen;',
-        '  float r = length(delta) / max(uRadius, 1e-4);',
-        // Ngoài vùng vành / trong lõi: không lensing
-        '  if (r < 0.78 || r > 1.55) {',
-        '    gl_FragColor = texture2D(tDiffuse, vUv);',
-        '    return;',
-        '  }',
-        // Mask vành ngoài (đỉnh ~ r=1.05–1.2)
-        '  float rim = smoothstep(0.78, 0.98, r) * (1.0 - smoothstep(1.22, 1.55, r));',
-        // Deflection kiểu lensing: nền bị kéo nhẹ VỀ phía tâm (hướng -radial)
-        // ~ 1/r falloff trong vành — giống ánh sáng bị uốn quanh khối lượng
-        '  float fall = 1.0 / (r * r + 0.35);',
-        '  float deflect = uStrength * rim * fall * 0.22;',
-        '  vec2 dir = delta / max(length(delta), 1e-5);',
-        '  vec2 uvW = vUv - dir * deflect * uRadius;',
-        // CA rất nhẹ trên vành
-        '  float ca = deflect * 0.25;',
-        '  float cr = texture2D(tDiffuse, uvW + dir * ca * 0.0025).r;',
-        '  float cg = texture2D(tDiffuse, uvW).g;',
-        '  float cb = texture2D(tDiffuse, uvW - dir * ca * 0.0025).b;',
-        '  vec3 col = vec3(cr, cg, cb);',
-        // Viền sáng mỏng (gợi Einstein ring), không át đĩa
-        '  col += vec3(1.0, 0.92, 0.75) * rim * uStrength * 0.06;',
-        '  gl_FragColor = vec4(col, 1.0);',
-        '}'
-      ].join('\n');
-
-      if (lensMaterial) {
-        try { lensMaterial.dispose(); } catch (e) {}
-      }
-      lensMaterial = new THREE.ShaderMaterial({
-        uniforms: {
-          tDiffuse: { value: null },
-          uBHScreen: { value: new THREE.Vector2(0.5, 0.5) },
-          uRadius: { value: 0.12 },
-          uStrength: { value: isMobile ? 0.42 : 0.52 },
-          uEnabled: { value: 0 }
-        },
-        vertexShader: vert,
-        fragmentShader: frag,
-        depthTest: false,
-        depthWrite: false
-      });
-
-      if (lensScene.children.length) {
-        while (lensScene.children.length) lensScene.remove(lensScene.children[0]);
-      }
-      const geo = new THREE.PlaneBufferGeometry ? new THREE.PlaneBufferGeometry(2, 2) : new THREE.PlaneGeometry(2, 2);
-      const quad = new THREE.Mesh(geo, lensMaterial);
-      lensScene.add(quad);
-    }
-
-    function resizeGravitationalLensing() {
-      if (!renderer || !lensRT) return;
-      const w = Math.max(2, renderer.domElement.width || window.innerWidth);
-      const h = Math.max(2, renderer.domElement.height || window.innerHeight);
-      const scale = isMobile ? 0.45 : 0.65;
-      const rw = Math.max(2, Math.floor(w * scale));
-      const rh = Math.max(2, Math.floor(h * scale));
-      if (lensRT.width !== rw || lensRT.height !== rh) {
-        lensRT.setSize(rw, rh);
-      }
-    }
-
-    /** Project BH → UV [0,1], estimate screen radius, gate by visibility */
-    function updateLensingUniforms() {
-      if (!lensMaterial || !blackHoleRoot || !camera || !renderer) {
-        if (lensMaterial) lensMaterial.uniforms.uEnabled.value = 0;
-        return false;
-      }
-      blackHoleRoot.getWorldPosition(LENS_TMP);
-      LENS_NDC.copy(LENS_TMP).project(camera);
-      // behind camera / far outside frustum
-      if (LENS_NDC.z > 1.0 || LENS_NDC.z < -1.0) {
-        lensMaterial.uniforms.uEnabled.value = 0;
-        return false;
-      }
-      const uvx = LENS_NDC.x * 0.5 + 0.5;
-      const uvy = LENS_NDC.y * 0.5 + 0.5;
-      if (uvx < -0.35 || uvx > 1.35 || uvy < -0.35 || uvy > 1.35) {
-        lensMaterial.uniforms.uEnabled.value = 0;
-        return false;
-      }
-      // Screen radius from volume size at distance
-      const dist = camera.position.distanceTo(LENS_TMP);
-      const volR = (blackHoleRoot.userData && blackHoleRoot.userData.volume &&
-        blackHoleRoot.userData.volume.userData && blackHoleRoot.userData.volume.userData.volumeRadius) || 24;
-      const fov = camera.fov * Math.PI / 180;
-      const viewH = 2 * Math.tan(fov * 0.5) * Math.max(dist, 1);
-      const radiusUV = (volR * 1.22) / Math.max(viewH, 0.01); // bám vành volume
-      const radiusClamped = Math.min(0.32, Math.max(0.04, radiusUV));
-      // Fade strength when far
-      const strengthScale = THREE.MathUtils
-        ? THREE.MathUtils.clamp(180 / dist, 0.25, 1.0)
-        : Math.min(1, Math.max(0.25, 180 / dist));
-      lensMaterial.uniforms.uBHScreen.value.set(uvx, uvy);
-      lensMaterial.uniforms.uRadius.value = radiusClamped;
-      lensMaterial.uniforms.uStrength.value = (isMobile ? 0.42 : 0.52) * strengthScale;
-      lensMaterial.uniforms.uEnabled.value = lensEnabled ? 1 : 0;
-      return lensEnabled && radiusClamped > 0.035;
-    }
-
-    function renderFrameWithLensing() {
-      if (!renderer || !scene || !camera) return;
-      const useLens = lensRT && lensMaterial && lensScene && lensCamera && updateLensingUniforms();
-      if (!useLens) {
-        renderer.setRenderTarget(null);
-        renderer.render(scene, camera);
-        return;
-      }
-      // Pass 1: scene → RT
-      renderer.setRenderTarget(lensRT);
-      renderer.clear();
-      renderer.render(scene, camera);
-      // Pass 2: warp → screen
-      lensMaterial.uniforms.tDiffuse.value = lensRT.texture;
-      renderer.setRenderTarget(null);
-      renderer.render(lensScene, lensCamera);
-    }
-
 
     function createDecorations() {
       const iconsToUse = isMobile ? ICONS.slice(0, 10) : ICONS;
@@ -6279,7 +5932,6 @@
       // Thiên thạch đã tắt
       createSpaceDust();
       createBlackHole();
-      try { initGravitationalLensing(); } catch (e) { console.warn('Lensing init', e); lensEnabled = false; }
       if (typeof rebuildFocusableBodies === 'function') rebuildFocusableBodies();
       // Khôi phục lời chúc đang bay quanh Trái Đất
       restoreEarthWishSprites();
@@ -6302,8 +5954,7 @@
         text: cleanText,
         author: (author || '').trim().slice(0, 30),
         createdAt: Date.now(),
-        target: toEarth ? 'earth' : 'galaxy',
-        clientId: getClientId()
+        target: toEarth ? 'earth' : 'galaxy'
       };
 
       currentWishes.push(newWish);
@@ -6318,12 +5969,14 @@
       updateWishCountUI();
       updateEarthPanelStats();
 
+      // Tạo sprite ngay (galaxy quanh Mặt Trời / earth quanh Trái Đất)
       if (scene) {
         if (toEarth) createEarthWishSprite(newWish);
         else createGalaxyWishSprite(newWish);
       }
 
       if (cloudEnabled) {
+        newWish.clientId = getClientId();
         insertCloudWish(newWish).then(function (res) {
           if (!res.ok) {
             showToast('Đã lưu máy này · Cloud lỗi (kiểm tra Supabase)');
@@ -6777,7 +6430,6 @@
         const dpr = window.devicePixelRatio || 1;
         renderer.setPixelRatio(Math.min(dpr, PERF.dprCap));
         renderer.setSize(w, h, false);
-        try { resizeGravitationalLensing(); } catch (e) {}
       }, 80);
     }
 
@@ -6810,9 +6462,9 @@
       currentRot.x += (targetRot.x - currentRot.x) * 0.08;
       currentRot.y += (targetRot.y - currentRot.y) * 0.08;
 
-      // Auto slow rotate when idle
+      // Auto slow rotate when idle — chậm hơn cho cảm giác êm
       if (!isDragging) {
-        targetRot.y += 0.0008 * speedMultiplier;
+        targetRot.y += 0.00035 * speedMultiplier;
       }
 
       // Camera orbit quanh focus (Mặt Trời hoặc hành tinh)
@@ -6855,10 +6507,12 @@
           camera.far = 2000;
           camera.updateProjectionMatrix();
         }
-            } else if (isMoonFocused() && focusTarget) {
+      } else if (isMoonFocused() && focusTarget) {
         const R = 0.65;
         const minDist = R + 0.85;
-        const dx = cx - focusCenter.x, dy = cy - focusCenter.y, dz = cz - focusCenter.z;
+        const dx = cx - focusCenter.x;
+        const dy = cy - focusCenter.y;
+        const dz = cz - focusCenter.z;
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
         if (dist < minDist) {
           const s = minDist / dist;
@@ -6872,7 +6526,6 @@
           camera.far = 2000;
           camera.updateProjectionMatrix();
         }
-
       } else if (isBlackHoleFocused() && focusTarget) {
         const volR = (focusTarget.userData && focusTarget.userData.volumeRadius) || 24;
         const minDist = volR * 1.12;
@@ -7016,10 +6669,10 @@
         updateEarthLiveActivity(t, speedMultiplier, { full: doFull, twinkle: doTwinkle });
       }
 
-      // Sao băng – spawn thưa hơn khi lag / mobile
-      const starInterval = isLagging ? 6.5 : (isMobile ? 5.0 : 3.0);
+      // Sao băng – cực thưa (hiếm thấy, không đầy trời vệt)
+      const starInterval = isLagging ? 48.0 : (isMobile ? 40.0 : 32.0);
       if (t - lastShootingStar > starInterval) {
-        if (Math.random() < (isLagging ? 0.25 : 0.4)) spawnShootingStar();
+        if (Math.random() < (isLagging ? 0.04 : 0.06)) spawnShootingStar();
         lastShootingStar = t;
       }
       for (let i = shootingStars.length - 1; i >= 0; i--) {
@@ -7051,10 +6704,30 @@
 
       // Hố đen: shader phase chậm + đồng bộ vị trí world
       if (blackHoleMat && blackHoleMat.uniforms) {
-        blackHoleMat.uniforms.uTime.value = t;
-        blackHoleMat.uniforms.uDiskPhase.value = t * 0.16; // accretion flow
+        // Lensing / đĩa chạy chậm
+        // Đĩa + lensing chậm ~3× — nhìn tự nhiên, mượt
+        blackHoleMat.uniforms.uTime.value = t * 0.035;
+        blackHoleMat.uniforms.uStarTime.value = t * 0.01;
+        blackHoleMat.uniforms.uDiskPhase.value = t * 0.006;
         if (blackHoleRoot) {
           blackHoleRoot.getWorldPosition(blackHoleMat.uniforms.uBHPos.value);
+          const bhPos = blackHoleMat.uniforms.uBHPos.value;
+          const dist = camera.position.distanceTo(bhPos);
+          const focusedBH = !!(focusTarget && focusTarget.userData && focusTarget.userData.isBlackHole);
+          // ~focus 13–40: gần; >200: nhìn cả hệ MT
+          let near = 0;
+          if (dist < 40) near = 1;
+          else if (dist < 200) near = 1 - (dist - 40) / 160;
+          else near = 0;
+          if (focusedBH) near = Math.max(near, 0.85);
+          blackHoleMat.uniforms.uNear.value = near;
+
+          // Core đen đặc: luôn bật khi volume trong tầm — không bao giờ để nhìn xuyên tâm
+          const coreMesh = blackHoleRoot.userData && blackHoleRoot.userData.core;
+          const volMesh = blackHoleRoot.userData && blackHoleRoot.userData.volume;
+          const bhInRange = focusedBH || dist < 320;
+          if (coreMesh) coreMesh.visible = bhInRange;
+          if (volMesh) volMesh.visible = focusedBH || dist < 280;
         }
       }
 
@@ -7143,24 +6816,18 @@
         }
       }
 
-      // Bụi mịn xoay chậm
-      if (spaceDust) spaceDust.rotation.y = t * 0.012 * speedMultiplier;
+      // Bụi mịn xoay rất chậm
+      if (spaceDust) spaceDust.rotation.y = t * 0.006 * speedMultiplier;
 
-      // Stars slow spin
-      if (stars) stars.rotation.y = t * 0.008 * speedMultiplier;
+      // Nền sao xoay rất chậm — tự nhiên hơn
+      if (stars) stars.rotation.y = t * 0.0035 * speedMultiplier;
 
       // Idle hint
       if (performance.now() - lastInteraction > 10000) {
         showIdleHint();
       }
 
-      // Presentation: gravitational lensing pass (không đụng logic)
-      try {
-        renderFrameWithLensing();
-      } catch (e) {
-        renderer.setRenderTarget(null);
-        renderer.render(scene, camera);
-      }
+      renderer.render(scene, camera);
     }
 
     function showIdleHint() {
@@ -7776,11 +7443,13 @@
     // Khởi tạo phase sảnh
     setAppPhase('LOBBY');
 
-    // WishCloud bootstrap
     try {
-      bootstrapWishCloud().catch(function (e) {
-        console.warn('[WishCloud] bootstrap', e);
-      });
+      if (typeof bootstrapWishCloud === 'function' && !window.__wishCloudBooted) {
+        window.__wishCloudBooted = true;
+        bootstrapWishCloud().catch(function (e) {
+          console.warn('[WishCloud] bootstrap', e);
+        });
+      }
     } catch (e) {
       console.warn('[WishCloud] bootstrap', e);
     }
@@ -8054,7 +7723,7 @@
       }, true); // capture: đóng menu trước khi canvas nhận
 
       // Mở modal từ menu → đóng menu
-      ['btn-send-wish', 'btn-change-music', 'btn-wish-mgr'].forEach((id) => {
+      ['btn-send-wish', 'btn-change-music'].forEach((id) => {
         document.getElementById(id)?.addEventListener('click', () => {
           setMenuOpen(false);
         });
@@ -8194,205 +7863,6 @@
       if (!canSendWishToday()) {
         showToast('Hết ' + DAILY_LIMIT + ' lượt hôm nay 🌙');
       }
-    });
-
-
-    // ===== Wish Manager UI (control layer) =====
-    function isUserWishId(id) {
-      return id && String(id).indexOf('u_') === 0;
-    }
-
-    function getFilteredWishes() {
-      const f = wishMgrFilter || 'all';
-      return (currentWishes || []).filter(function (w) {
-        if (!w) return false;
-        if (f === 'user') return isUserWishId(w.id);
-        if (f === 'default') return !isUserWishId(w.id);
-        if (f === 'earth') return w.target === 'earth';
-        if (f === 'galaxy') return w.target !== 'earth';
-        return true;
-      });
-    }
-
-    function renderWishManagerList() {
-      const listEl = document.getElementById('wm-list');
-      const foot = document.getElementById('wm-foot');
-      if (!listEl) return;
-      const items = getFilteredWishes();
-      listEl.innerHTML = '';
-      if (!items.length) {
-        listEl.innerHTML = '<div class="wish-mgr-empty">Không có lời chúc trong bộ lọc này</div>';
-      } else {
-        items.forEach(function (w) {
-          const row = document.createElement('div');
-          row.className = 'wish-mgr-item';
-          const body = document.createElement('div');
-          body.className = 'wm-body';
-          const tx = document.createElement('div');
-          tx.className = 'wm-text';
-          tx.textContent = w.text || '';
-          const meta = document.createElement('div');
-          meta.className = 'wm-meta';
-          const kind = isUserWishId(w.id) ? 'User' : 'Mặc định';
-          const tgt = w.target === 'earth' ? '🌍 Trái Đất' : '🌌 Thiên hà';
-          const who = w.author ? (' · ' + w.author) : '';
-          meta.textContent = kind + ' · ' + tgt + who;
-          body.appendChild(tx);
-          body.appendChild(meta);
-          const del = document.createElement('button');
-          del.type = 'button';
-          del.className = 'wm-del';
-          del.title = isUserWishId(w.id) ? 'Xóa lời chúc này' : 'Không xóa lời mặc định';
-          del.textContent = '✕';
-          if (!isUserWishId(w.id)) {
-            del.disabled = true;
-          } else {
-            del.addEventListener('click', function () {
-              if (!confirm('Xóa lời chúc này khỏi kho?')) return;
-              deleteWishById(w.id);
-              renderWishManagerList();
-              updateWishCountUI();
-            });
-          }
-          row.appendChild(body);
-          row.appendChild(del);
-          listEl.appendChild(row);
-        });
-      }
-      if (foot) {
-        const u = (currentWishes || []).filter(function (w) { return isUserWishId(w && w.id); }).length;
-        const d = (currentWishes || []).length - u;
-        foot.textContent = 'Kho: ' + WISH_STORE_KEY + ' · User ' + u + ' · Mặc định ' + d + ' · Tổng ' + (currentWishes || []).length;
-      }
-    }
-
-    function openWishManager() {
-      renderWishManagerList();
-      openModal('modal-wish-mgr');
-    }
-
-    function exportWishesJSON() {
-      const payload = {
-        v: WISH_STORE_VERSION,
-        app: 'thien-ha-loi-chuc',
-        exportedAt: new Date().toISOString(),
-        wishes: currentWishes || []
-      };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'thienha-wishes-backup.json';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function () {
-        URL.revokeObjectURL(a.href);
-        a.remove();
-      }, 500);
-      showToast('Đã xuất file backup JSON ⬇');
-    }
-
-    function importWishesFromFile(file, mode) {
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function () {
-        try {
-          const parsed = JSON.parse(String(reader.result || ''));
-          let list = Array.isArray(parsed) ? parsed : (parsed && parsed.wishes);
-          if (!Array.isArray(list) || !list.length) {
-            showToast('File JSON không có lời chúc hợp lệ');
-            return;
-          }
-          const normalized = list.map(normalizeWish).filter(Boolean);
-          if (mode === 'replace') {
-            currentWishes = normalized;
-          } else {
-            currentWishes = mergeWishLists(currentWishes, normalized);
-          }
-          saveWishes(currentWishes);
-          // Refresh sprites if scene ready
-          if (typeof scene !== 'undefined' && scene) {
-            try {
-              const existing = {};
-              (wishSprites || []).forEach(function (s) {
-                if (s.userData && s.userData.wishId) existing[s.userData.wishId] = true;
-              });
-              currentWishes.forEach(function (w) {
-                if (!w || !w.id || existing[w.id]) return;
-                if (w.target === 'earth' && typeof createEarthWishSprite === 'function') {
-                  createEarthWishSprite(w);
-                } else if (typeof createGalaxyWishSprite === 'function') {
-                  createGalaxyWishSprite(w);
-                }
-              });
-            } catch (e) {}
-          }
-          renderWishManagerList();
-          updateWishCountUI();
-          showToast('Đã nhập ' + normalized.length + ' lời chúc vào kho');
-        } catch (e) {
-          console.warn(e);
-          showToast('Không đọc được file JSON');
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    document.getElementById('btn-wish-mgr')?.addEventListener('click', function () {
-      openWishManager();
-    });
-
-    document.querySelectorAll('#wm-filters button').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        document.querySelectorAll('#wm-filters button').forEach(function (b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-        wishMgrFilter = btn.getAttribute('data-filter') || 'all';
-        renderWishManagerList();
-      });
-    });
-
-    document.getElementById('wm-export')?.addEventListener('click', exportWishesJSON);
-    document.getElementById('wm-import')?.addEventListener('click', function () {
-      document.getElementById('wm-import-file')?.click();
-    });
-    document.getElementById('wm-import-file')?.addEventListener('change', function (e) {
-      const f = e.target.files && e.target.files[0];
-      importWishesFromFile(f, 'merge');
-      e.target.value = '';
-    });
-    document.getElementById('wm-merge-old')?.addEventListener('click', function () {
-      const before = (currentWishes || []).length;
-      currentWishes = migrateAllLegacyWishes();
-      // migrate already writes store
-      const after = (currentWishes || []).length;
-      renderWishManagerList();
-      updateWishCountUI();
-      showToast(after > before
-        ? ('Đã gộp thêm ' + (after - before) + ' lời từ data cũ')
-        : 'Không còn data cũ để gộp');
-    });
-    document.getElementById('wm-clear-user')?.addEventListener('click', function () {
-      if (!confirm('Xóa TẤT CẢ lời chúc do bạn gửi? (Giữ lời mặc định)')) return;
-      const keep = (currentWishes || []).filter(function (w) { return !isUserWishId(w && w.id); });
-      // Remove user sprites
-      if (scene && wishSprites && wishSprites.length) {
-        const remain = [];
-        wishSprites.forEach(function (s) {
-          const id = s.userData && s.userData.wishId;
-          if (isUserWishId(id)) {
-            scene.remove(s);
-            if (s.material) {
-              if (s.material.map) s.material.map.dispose();
-              s.material.dispose();
-            }
-          } else remain.push(s);
-        });
-        wishSprites = remain;
-      }
-      currentWishes = keep.length ? keep : DEFAULT_WISHES.map(normalizeWish);
-      saveWishes(currentWishes);
-      renderWishManagerList();
-      updateWishCountUI();
-      showToast('Đã xóa lời chúc user');
     });
 
     // Prevent context menu
