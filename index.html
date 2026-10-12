@@ -1517,6 +1517,211 @@
       }
     }
 
+    /* ===== Mini queue sheet (kiểu Spotify NOW PLAYING) ===== */
+    .music-dock-title,
+    .music-dock-meta {
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .music-mini-sheet {
+      position: fixed;
+      left: max(10px, env(safe-area-inset-left));
+      bottom: max(72px, calc(env(safe-area-inset-bottom) + 58px));
+      z-index: 50;
+      width: min(360px, calc(100vw - 20px));
+      max-height: min(58vh, 480px);
+      display: none;
+      flex-direction: column;
+      background: #121212;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(0,0,0,0.4);
+      overflow: hidden;
+      pointer-events: auto;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .music-mini-sheet.open {
+      display: flex;
+      animation: musicMiniIn 0.2s ease-out;
+    }
+    @keyframes musicMiniIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .music-mini-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 14px 10px;
+      flex-shrink: 0;
+      gap: 10px;
+    }
+    .music-mini-now {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #b3b3b3;
+    }
+    .music-mini-close {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.1);
+      color: #b3b3b3;
+      font-size: 1rem;
+      cursor: pointer;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: inherit;
+      flex-shrink: 0;
+    }
+    .music-mini-close:hover,
+    .music-mini-close:active {
+      background: rgba(255,255,255,0.18);
+      color: #fff;
+    }
+    .music-mini-list {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      flex: 1;
+      min-height: 0;
+      max-height: min(48vh, 400px);
+    }
+    .music-mini-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: #fff;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 56px;
+      transition: background 0.12s;
+    }
+    .music-mini-item:hover,
+    .music-mini-item:active {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .music-mini-item.active {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .music-mini-item .mm-play-ind {
+      width: 16px;
+      flex-shrink: 0;
+      font-size: 0.7rem;
+      color: #1db954;
+      text-align: center;
+      line-height: 1;
+    }
+    .music-mini-item:not(.active) .mm-play-ind {
+      visibility: hidden;
+    }
+    .music-mini-item .mm-art {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: #282828;
+      display: block;
+    }
+    .music-mini-item .mm-art-ph {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #333 0%, #1a1a1a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      color: #b3b3b3;
+    }
+    .music-mini-item .mm-text {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .music-mini-item .mm-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+    .music-mini-item.active .mm-name {
+      color: #1db954;
+    }
+    .music-mini-item .mm-artist {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #b3b3b3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.25;
+    }
+    .music-mini-empty {
+      padding: 28px 16px;
+      text-align: center;
+      font-size: 0.88rem;
+      color: #b3b3b3;
+      line-height: 1.5;
+    }
+    .music-mini-footer {
+      padding: 8px 12px 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+    .music-mini-footer button {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 999px;
+      border: none;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .music-mini-footer button:hover,
+    .music-mini-footer button:active {
+      background: rgba(255,255,255,0.16);
+    }
+    body.phase-lobby .music-mini-sheet {
+      bottom: max(70px, calc(env(safe-area-inset-bottom) + 56px));
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(380px, calc(100vw - 24px));
+    }
+    body.phase-lobby .music-mini-sheet.open {
+      animation: musicMiniInLobby 0.2s ease-out;
+    }
+    @keyframes musicMiniInLobby {
+      from { opacity: 0; transform: translateX(-50%) translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    }
+
     /* Idle hint */
     .space-idle-hint {
       position: fixed;
@@ -2173,11 +2378,23 @@
       <button type="button" class="music-dock-btn play" id="music-dock-play" aria-label="Phát / Tạm dừng" title="Phát / Tạm dừng">▶</button>
       <button type="button" class="music-dock-btn" id="music-dock-next" aria-label="Bài sau" title="Bài sau">⏭</button>
     </div>
-    <div class="music-dock-meta">
+    <div class="music-dock-meta" id="music-dock-meta">
       <div class="music-dock-title" id="music-dock-title">Chưa có nhạc</div>
       <div class="music-dock-sub" id="music-dock-sub">Chạm để chọn bài</div>
     </div>
     <button type="button" class="music-dock-btn music-dock-btn-add" id="music-dock-add" aria-label="Chọn nhạc" title="Chọn nhạc" style="flex-shrink:0;">♫</button>
+  </div>
+
+  <!-- Mini queue — kiểu Spotify NOW PLAYING -->
+  <div id="music-mini-sheet" class="music-mini-sheet" role="dialog" aria-label="Đang phát" aria-hidden="true">
+    <div class="music-mini-header">
+      <span class="music-mini-now">Đang phát</span>
+      <button type="button" class="music-mini-close" id="music-mini-close" aria-label="Đóng">×</button>
+    </div>
+    <div class="music-mini-list" id="music-mini-list"></div>
+    <div class="music-mini-footer">
+      <button type="button" id="music-mini-manage">Thêm / Quản lý nhạc</button>
+    </div>
   </div>
 
   <!-- Idle hint -->
@@ -3364,6 +3581,12 @@
       const track = musicPlaylist[trackIndex];
       currentMusicName = track.name || ('Bài ' + (trackIndex + 1));
       renderPlaylistUI();
+      try {
+        const mini = document.getElementById('music-mini-sheet');
+        if (mini && mini.classList.contains('open') && typeof renderMusicMiniList === 'function') {
+          renderMusicMiniList();
+        }
+      } catch (e) { }
 
       try {
         if (track.type === 'youtube' || track.type === 'youtube_playlist') {
@@ -7430,16 +7653,153 @@
     document.getElementById('music-dock-add')?.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (typeof closeMusicMiniSheet === 'function') closeMusicMiniSheet();
       openModal('modal-music');
       renderPlaylistUI();
     });
 
-    document.getElementById('music-dock-title')?.addEventListener('click', (e) => {
+    // ===== Mini queue sheet (kiểu Spotify) =====
+    function trackArtUrl(t) {
+      if (!t) return '';
+      if (t.art) return t.art;
+      if ((t.type === 'youtube' || t.type === 'youtube_playlist') && t.id) {
+        return 'https://i.ytimg.com/vi/' + t.id + '/mqdefault.jpg';
+      }
+      return '';
+    }
+    function trackArtistLabel(t) {
+      if (!t) return '';
+      if (t.artist) return t.artist;
+      if (t.type === 'youtube_playlist') return 'YouTube Playlist';
+      if (t.type === 'youtube') return 'YouTube';
+      if (t.type === 'audio') {
+        const n = t.name || '';
+        if (/\.(mp3|m4a|wav|ogg|aac|mp4|webm)$/i.test(n)) return 'File trên máy';
+        return 'Nhạc';
+      }
+      return '';
+    }
+    function escapeHtmlMini(s) {
+      return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function renderMusicMiniList() {
+      const list = document.getElementById('music-mini-list');
+      if (!list) return;
+      const n = musicPlaylist.length;
+      if (!n) {
+        list.innerHTML = '<div class="music-mini-empty">Chưa có bài nào.<br>Bấm ♫ để thêm nhạc.</div>';
+        return;
+      }
+      list.innerHTML = musicPlaylist.map(function (t, i) {
+        const active = i === trackIndex ? ' active' : '';
+        const name = escapeHtmlMini(t.name || ('Bài ' + (i + 1)));
+        const artist = escapeHtmlMini(trackArtistLabel(t));
+        const art = trackArtUrl(t);
+        const artHtml = art
+          ? '<img class="mm-art" src="' + art + '" alt="" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><span class="mm-art-ph" style="display:none">🎵</span>'
+          : '<span class="mm-art-ph">🎵</span>';
+        return '<button type="button" class="music-mini-item' + active + '" data-track-idx="' + i + '">' +
+          '<span class="mm-play-ind">▶</span>' +
+          artHtml +
+          '<span class="mm-text"><span class="mm-name">' + name + '</span><span class="mm-artist">' + artist + '</span></span>' +
+          '</button>';
+      }).join('');
+      list.querySelectorAll('[data-track-idx]').forEach(function (el) {
+        el.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const i = parseInt(el.getAttribute('data-track-idx'), 10);
+          if (!isNaN(i)) {
+            playTrackAt(i, true);
+            renderMusicMiniList();
+            try {
+              const activeEl = list.querySelector('.music-mini-item.active');
+              if (activeEl) activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            } catch (e) { }
+          }
+        });
+      });
+      try {
+        const activeEl = list.querySelector('.music-mini-item.active');
+        if (activeEl) {
+          setTimeout(function () {
+            activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }, 40);
+        }
+      } catch (e) { }
+    }
+
+    function openMusicMiniSheet() {
+      const sheet = document.getElementById('music-mini-sheet');
+      if (!sheet) return;
+      renderMusicMiniList();
+      sheet.classList.add('open');
+      sheet.setAttribute('aria-hidden', 'false');
+    }
+    function closeMusicMiniSheet() {
+      const sheet = document.getElementById('music-mini-sheet');
+      if (!sheet) return;
+      sheet.classList.remove('open');
+      sheet.setAttribute('aria-hidden', 'true');
+    }
+    function toggleMusicMiniSheet() {
+      const sheet = document.getElementById('music-mini-sheet');
+      if (!sheet) return;
+      if (sheet.classList.contains('open')) closeMusicMiniSheet();
+      else openMusicMiniSheet();
+    }
+
+    function onDockTitleClick(e) {
       e.preventDefault();
       e.stopPropagation();
+      if (!musicPlaylist.length) {
+        openModal('modal-music');
+        renderPlaylistUI();
+        return;
+      }
+      toggleMusicMiniSheet();
+    }
+    document.getElementById('music-dock-title')?.addEventListener('click', onDockTitleClick);
+    document.getElementById('music-dock-sub')?.addEventListener('click', onDockTitleClick);
+    document.getElementById('music-dock-meta')?.addEventListener('click', function (e) {
+      if (e.target.closest && (e.target.closest('#music-dock-title') || e.target.closest('#music-dock-sub'))) return;
+      onDockTitleClick(e);
+    });
+
+    document.getElementById('music-mini-close')?.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeMusicMiniSheet();
+    });
+    document.getElementById('music-mini-manage')?.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeMusicMiniSheet();
       openModal('modal-music');
       renderPlaylistUI();
     });
+    document.getElementById('music-mini-sheet')?.addEventListener('pointerdown', function (e) {
+      e.stopPropagation();
+    });
+    document.getElementById('music-mini-sheet')?.addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
+    document.addEventListener('pointerdown', function (e) {
+      const sheet = document.getElementById('music-mini-sheet');
+      if (!sheet || !sheet.classList.contains('open')) return;
+      if (sheet.contains(e.target)) return;
+      if (e.target.closest && (
+        e.target.closest('#music-dock-title') ||
+        e.target.closest('#music-dock-sub') ||
+        e.target.closest('#music-dock-meta')
+      )) return;
+      closeMusicMiniSheet();
+    }, true);
 
     // Khởi tạo phase sảnh
     setAppPhase('LOBBY');
