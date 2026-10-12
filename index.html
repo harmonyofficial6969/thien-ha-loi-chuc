@@ -1302,11 +1302,6 @@
       background: linear-gradient(135deg, #a855f7 0%, #00f0ff 100%);
       box-shadow: 0 0 25px rgba(0, 240, 255, 0.8), 0 8px 30px rgba(0, 0, 0, 0.6);
       -webkit-tap-highlight-color: transparent;
-      padding: 0;
-      margin: 0;
-      font-family: inherit;
-      appearance: none;
-      -webkit-appearance: none;
     }
 
     .floating-envelope-btn.visible {
@@ -1345,13 +1340,6 @@
       border: 1px solid #fff;
       box-shadow: 0 0 10px rgba(244, 63, 94, 0.8);
       white-space: nowrap;
-      display: none; /* hiện khi có thư chưa đọc / có lời chúc */
-    }
-    .envelope-badge.show {
-      display: block;
-    }
-    .floating-envelope-btn.has-unread {
-      box-shadow: 0 0 28px rgba(244, 63, 94, 0.55), 0 0 25px rgba(0, 240, 255, 0.65), 0 8px 30px rgba(0, 0, 0, 0.6);
     }
 
     /* Audio prompt */
@@ -1924,26 +1912,26 @@
       position: relative;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       padding: 0 10px;
       height: 36px;
       background: rgba(168, 85, 247, 0.22);
       border: 1px solid rgba(168, 85, 247, 0.4);
       border-radius: 14px;
-      font-size: 0.72rem;
+      font-size: 0.75rem;
       font-weight: 600;
       color: #e9d5ff;
-      max-width: min(200px, 46vw);
+      max-width: 88px;
       overflow: visible;
       white-space: nowrap;
       cursor: pointer;
-      flex-shrink: 0;
+      flex-shrink: 1;
       min-width: 0;
     }
-    .galaxy-badge > span#galaxy-name-label {
+    .galaxy-badge > span {
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 140px;
+      max-width: 72px;
     }
     .galaxy-badge:hover {
       background: rgba(168, 85, 247, 0.35);
@@ -2076,8 +2064,8 @@
       <span class="bar"></span>
     </button>
     <header class="top-nav" id="top-nav" role="toolbar" aria-label="Công cụ thiên hà">
-      <div class="galaxy-badge" id="galaxy-badge" data-tip="Trung tâm thiên hà" aria-label="Trung tâm thiên hà">
-        <span id="galaxy-name-label">Trung tâm thiên hà</span>
+      <div class="galaxy-badge" id="galaxy-badge" data-tip="Thiên Hà Lời Chúc" aria-label="Thiên hà">
+        <span id="galaxy-name-label">Thiên Hà</span>
         <span id="cloud-status" class="cloud-status-pill" data-mode="local" title="Trạng thái đồng bộ">Local</span>
       </div>
       <button id="btn-planet-menu" class="btn-icon" data-tip="Menu hành tinh · Focus nhanh" aria-label="Hành tinh" aria-expanded="false" aria-controls="planet-menu-panel">🪐</button>
@@ -2166,11 +2154,11 @@
     <span>🏠</span><span>Sảnh</span>
   </button>
 
-  <!-- Floating envelope — thư bí mật + duyệt lời chúc -->
-  <button type="button" id="floating-envelope" class="floating-envelope-btn" title="Mở thư bí mật" aria-label="Mở thư">
-    <span class="envelope-icon" aria-hidden="true">💌</span>
-    <span id="envelope-badge" class="envelope-badge" aria-live="polite">1 thư mới</span>
-  </button>
+  <!-- Floating envelope only -->
+  <div id="floating-envelope" class="floating-envelope-btn" title="Mở thư bí mật">
+    <div class="envelope-icon">💌</div>
+    <div class="envelope-badge">1 thư mới</div>
+  </div>
 
   <!-- Audio prompt – hiện khi đã có nhạc nhưng chưa phát được (mobile policy) -->
   <div id="audio-prompt" class="audio-prompt-pill">
@@ -2793,7 +2781,7 @@
 
     // ----- Một thiên hà duy nhất -----
     const currentGalaxySlug = 'chinh';
-    const currentGalaxyName = 'Trung tâm thiên hà';
+    const currentGalaxyName = 'Thiên Hà';
     currentTheme = THEME_PRESETS.golden;
     applyThemeToDOM(currentTheme);
 
@@ -2838,7 +2826,6 @@
         const remain = remainingWishesToday();
         el.textContent = `Đang có ${currentWishes.length} lời chúc · Còn ${remain}/${DAILY_LIMIT} lượt hôm nay`;
       }
-      if (typeof updateEnvelopeBadge === 'function') updateEnvelopeBadge();
     }
 
     function updateGalaxyUI() {
@@ -2931,7 +2918,6 @@
     // ========== THREE.JS SETUP ==========
     let scene, camera, renderer, clock;
     let stars, sun, moon, wishSprites = []; // sprite chữ lời chúc (galaxy + earth)
-    let milkyWaySky = null; // bầu trời Ngân Hà (texture sphere)
     let asteroids = [];     // thiên thạch
     let spaceDust = null;   // bụi vũ trụ (Points)
     let impactFX = [];      // hạt va chạm thiên thạch
@@ -3883,51 +3869,6 @@
       stars = new THREE.Points(starGeo, starMat);
       stars.frustumCulled = false; // bao quanh camera
       scene.add(stars);
-
-      // ========== BẦU TRỜI NGÂN HÀ (photoreal sky band) ==========
-      // Texture media/milkyway-sky.png — sphere BackSide, additive, quay chậm
-      (function createMilkyWaySky() {
-        const skyLoader = new THREE.TextureLoader();
-        skyLoader.load(
-          'media/milkyway-sky.png',
-          function (tex) {
-            try {
-              if (tex.colorSpace !== undefined) tex.colorSpace = THREE.SRGBColorSpace || THREE.sRGBEncoding;
-              else if (THREE.sRGBEncoding !== undefined) tex.encoding = THREE.sRGBEncoding;
-              tex.minFilter = THREE.LinearFilter;
-              tex.magFilter = THREE.LinearFilter;
-              tex.wrapS = THREE.RepeatWrapping;
-              tex.wrapT = THREE.ClampToEdgeWrapping;
-              tex.needsUpdate = true;
-            } catch (e) {}
-            const skyR = isMobile ? 720 : 980;
-            const skyGeo = new THREE.SphereGeometry(skyR, isMobile ? 48 : 72, isMobile ? 24 : 36);
-            const skyMat = new THREE.MeshBasicMaterial({
-              map: tex,
-              side: THREE.BackSide,
-              transparent: true,
-              opacity: isMobile ? 0.48 : 0.58,
-              depthWrite: false,
-              depthTest: true,
-              fog: false,
-              blending: THREE.AdditiveBlending,
-              toneMapped: false
-            });
-            milkyWaySky = new THREE.Mesh(skyGeo, skyMat);
-            milkyWaySky.name = 'MilkyWaySky';
-            milkyWaySky.frustumCulled = false;
-            milkyWaySky.renderOrder = -10;
-            // Nghiêng dải Ngân Hà như mặt phẳng thiên hà
-            milkyWaySky.rotation.z = 0.42;
-            milkyWaySky.rotation.x = 0.18;
-            if (scene) scene.add(milkyWaySky);
-          },
-          undefined,
-          function (err) {
-            console.warn('[Sky] Không load được media/milkyway-sky.png', err);
-          }
-        );
-      })();
 
       // ========== MẶT TRỜI CHÂN THỰC ==========
       // Texture 2K + photosphere tự sáng + corona nhiều lớp (như ảnh NASA)
@@ -6881,8 +6822,6 @@
 
       // Nền sao xoay rất chậm — tự nhiên hơn
       if (stars) stars.rotation.y = t * 0.0035 * speedMultiplier;
-      // Dải Ngân Hà quay cực chậm (giữ tilt, chỉ yaw)
-      if (milkyWaySky) milkyWaySky.rotation.y = t * 0.0022 * speedMultiplier;
 
       // Idle hint
       if (performance.now() - lastInteraction > 10000) {
@@ -7792,148 +7731,47 @@
       });
     })();
 
-    // =====================================================================
-    // ENVELOPE MODULE — thư bí mật + duyệt lời chúc (data-driven)
-    // FSM nhẹ: UNREAD_SPECIAL → READ → BROWSE_WISHES
-    // =====================================================================
-    const ENVELOPE_READ_KEY = 'thienha_envelope_special_read_v1';
-    let envelopeWishIndex = -1;
-
-    function getSpecialLetter() {
-      const params = new URLSearchParams(location.search);
-      return {
-        to: params.get('to') || 'DƯƠNG BB 😗',
-        from: params.get('from') || 'CAMAPTRENBO',
-        msg: params.get('msg') || 'Chúc Dương một mùa Trung Thu ấm áp, tràn đầy yêu thương và ánh trăng soi sáng mọi ước mơ 🌕✨',
-        stamp: 'THƯ TỪ <br> CÁ MẬP GỬI DƯƠNG BB '
-      };
-    }
-
-    function isSpecialLetterUnread() {
-      try {
-        return localStorage.getItem(ENVELOPE_READ_KEY) !== '1';
-      } catch (e) {
-        return true;
-      }
-    }
-
-    function markSpecialLetterRead() {
-      try {
-        localStorage.setItem(ENVELOPE_READ_KEY, '1');
-      } catch (e) {}
-    }
-
-    /** Badge: ưu tiên thư bí mật chưa đọc → số lời chúc user (u_) */
-    function updateEnvelopeBadge() {
-      const badge = document.getElementById('envelope-badge');
-      const btn = document.getElementById('floating-envelope');
-      if (!badge || !btn) return;
-
-      if (isSpecialLetterUnread()) {
-        badge.textContent = '1 thư mới';
-        badge.classList.add('show');
-        btn.classList.add('has-unread');
-        btn.title = 'Có thư bí mật chưa đọc';
-        return;
-      }
-
-      const userWishes = (currentWishes || []).filter(function (w) {
-        return w && w.id && String(w.id).indexOf('u_') === 0;
-      });
-      if (userWishes.length > 0) {
-        badge.textContent = userWishes.length + ' lời chúc';
-        badge.classList.add('show');
-        btn.classList.remove('has-unread');
-        btn.title = 'Xem lời chúc trong thiên hà';
-        return;
-      }
-
-      badge.classList.remove('show');
-      btn.classList.remove('has-unread');
-      btn.title = 'Mở thư / lời chúc';
-    }
-
-    function fillLetterModal(opts) {
-      const toEl = document.getElementById('letter-to');
-      const msgEl = document.getElementById('letter-message');
-      const fromEl = document.getElementById('letter-from');
-      const stamp = document.querySelector('.letter-stamp');
-      const btnDel = document.getElementById('btn-delete-this-wish');
-      if (toEl) toEl.textContent = opts.toText || '';
-      if (msgEl) msgEl.textContent = opts.message || '';
-      if (fromEl) fromEl.textContent = opts.fromText || '';
-      if (stamp && opts.stamp) stamp.innerHTML = opts.stamp;
-      currentOpenWishId = opts.wishId || null;
-      if (btnDel) {
-        const canDel = !!(opts.wishId && String(opts.wishId).indexOf('u_') === 0);
-        btnDel.style.display = canDel ? 'flex' : 'none';
-      }
-    }
-
-    /** Mở thư từ 1 lời chúc trong data (click ngôi sao / envelope browse) */
+    /** Mở thư từ 1 lời chúc trong data (click ngôi sao) */
     function openWishLetter(wish) {
       if (!wish) return;
-      fillLetterModal({
-        toText: wish.author ? ('Từ ' + wish.author) : 'Lời chúc từ Thiên Hà',
-        message: wish.text || '',
-        fromText: wish.author ? ('— ' + wish.author) : '— Từ Thiên Hà Lời Chúc',
-        stamp: 'LỜI CHÚC<br>TRONG THIÊN HÀ',
-        wishId: wish.id || null
-      });
+      currentOpenWishId = wish.id || null;
+
+      document.getElementById('letter-to').textContent = wish.author
+        ? `Từ ${wish.author}`
+        : 'Lời chúc từ Thiên Hà';
+      document.getElementById('letter-message').textContent = wish.text || '';
+      document.getElementById('letter-from').textContent = wish.author
+        ? `— ${wish.author}`
+        : '— Từ Thiên Hà Lời Chúc';
+      const stamp = document.querySelector('.letter-stamp');
+      if (stamp) stamp.innerHTML = 'LỜI CHÚC<br>TRONG THIÊN HÀ';
+
+      // Chỉ hiện nút Xóa nếu là lời chúc user gửi (id bắt đầu u_)
+      const btnDel = document.getElementById('btn-delete-this-wish');
+      if (btnDel) {
+        const isUserWish = wish.id && String(wish.id).startsWith('u_');
+        btnDel.style.display = isUserWish ? 'flex' : 'none';
+      }
+
       openModal('modal-letter');
     }
 
-    function openSpecialLetter() {
-      const letter = getSpecialLetter();
-      fillLetterModal({
-        toText: 'Gửi ' + letter.to,
-        message: letter.msg,
-        fromText: '— ' + letter.from,
-        stamp: letter.stamp,
-        wishId: null
-      });
-      markSpecialLetterRead();
-      updateEnvelopeBadge();
+    // Envelope / Letter đặc biệt (URL params)
+    document.getElementById('floating-envelope').addEventListener('click', () => {
+      const params = new URLSearchParams(location.search);
+      const to = params.get('to') || 'DƯƠNG BB 😗';
+      const from = params.get('from') || 'CAMAPTRENBO';
+      const msg = params.get('msg') || 'Chúc Dương một mùa Trung Thu ấm áp, tràn đầy yêu thươnggggggggggggggg 🌕✨';
+      document.getElementById('letter-to').textContent = `Gửi ${to}`;
+      document.getElementById('letter-message').textContent = msg;
+      document.getElementById('letter-from').textContent = `— ${from}`;
+      const stamp = document.querySelector('.letter-stamp');
+      if (stamp) stamp.innerHTML = 'THƯ TỪ <br> CÁ MẬP GỬI DƯƠNG BB ';
+      currentOpenWishId = null;
+      const btnDel = document.getElementById('btn-delete-this-wish');
+      if (btnDel) btnDel.style.display = 'none';
       openModal('modal-letter');
-    }
-
-    /** Duyệt lần lượt lời chúc (user trước, rồi default) */
-    function openNextEnvelopeWish() {
-      const list = (currentWishes || []).slice().filter(function (w) { return w && w.text; });
-      if (!list.length) {
-        openSpecialLetter();
-        return;
-      }
-      // Ưu tiên user wishes
-      const userFirst = list.filter(function (w) { return String(w.id || '').indexOf('u_') === 0; })
-        .concat(list.filter(function (w) { return String(w.id || '').indexOf('u_') !== 0; }));
-      envelopeWishIndex = (envelopeWishIndex + 1) % userFirst.length;
-      openWishLetter(userFirst[envelopeWishIndex]);
-      showToast('Lời chúc ' + (envelopeWishIndex + 1) + '/' + userFirst.length);
-    }
-
-    function onEnvelopeClick(e) {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      // 1) Chưa đọc thư bí mật → mở thư đặc biệt
-      if (isSpecialLetterUnread()) {
-        openSpecialLetter();
-        return;
-      }
-      // 2) Đã đọc → duyệt lời chúc trong thiên hà
-      openNextEnvelopeWish();
-    }
-
-    (function setupEnvelope() {
-      const btn = document.getElementById('floating-envelope');
-      if (!btn) return;
-      btn.addEventListener('click', onEnvelopeClick);
-      updateEnvelopeBadge();
-    })();
-
-    
+    });
 
     // Close modals
     document.querySelectorAll('[data-close]').forEach(btn => {
