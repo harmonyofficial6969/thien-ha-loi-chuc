@@ -3206,19 +3206,19 @@
             return;
           }
 
-          // Đã có player → load video hoặc playlist
+          // Đã có player → ưu tiên 1 video cụ thể (tránh list=RD phát nhầm bài)
           if (ytPlayer && ytReady) {
             try {
-              if (playlistId && typeof ytPlayer.loadPlaylist === 'function') {
-                ytPlayer.loadPlaylist({ list: playlistId, listType: 'playlist', index: 0 });
-                ytVideoId = null;
+              if (videoId && typeof ytPlayer.loadVideoById === 'function') {
+                ytVideoId = videoId;
+                ytPlayer.loadVideoById({ videoId: videoId, startSeconds: 0 });
                 try { ytPlayer.unMute(); ytPlayer.setVolume(100); } catch (e) { }
                 done(resolve, ytPlayer);
                 return;
               }
-              if (videoId && typeof ytPlayer.loadVideoById === 'function') {
-                ytVideoId = videoId;
-                ytPlayer.loadVideoById({ videoId: videoId, startSeconds: 0 });
+              if (playlistId && typeof ytPlayer.loadPlaylist === 'function') {
+                ytPlayer.loadPlaylist({ list: playlistId, listType: 'playlist', index: 0 });
+                ytVideoId = null;
                 try { ytPlayer.unMute(); ytPlayer.setVolume(100); } catch (e) { }
                 done(resolve, ytPlayer);
                 return;
@@ -3362,15 +3362,16 @@
             }
           };
 
-          if (playlistId) {
-            playerVars.listType = 'playlist';
-            playerVars.list = playlistId;
-            // Lặp vô hạn toàn bộ playlist YouTube (không giới hạn 50 trong app)
-            playerVars.loop = 1;
-          } else if (videoId) {
+          // Ưu tiên 1 video — tránh dính list= từ link share (mix RD…) phát nhầm
+          if (videoId) {
             playerConfig.videoId = videoId;
             playerVars.loop = 1;
+            // playlist = cùng videoId → loop 1 bài (API YT), không phải playlist khác
             playerVars.playlist = videoId;
+          } else if (playlistId) {
+            playerVars.listType = 'playlist';
+            playerVars.list = playlistId;
+            playerVars.loop = 1;
           } else {
             done(reject, new Error('Thiếu videoId hoặc playlistId'));
             return;
@@ -3410,32 +3411,48 @@
     }
 
     function urlToTrack(url) {
-      const plId = extractYouTubePlaylistId(url);
-      // Ưu tiên playlist nếu URL có list= (kể cả kèm v=)
-      if (plId && (/[?&]list=/.test(url) || /^PL/i.test(plId))) {
-        // URL chỉ có 1 video + list=RD... (mix) vẫn dùng được như playlist
+      const s = String(url || '').trim();
+      const ytId = extractYouTubeId(s);
+      const plId = extractYouTubePlaylistId(s);
+
+      // Trang playlist thuần: youtube.com/playlist?list=PLxxxx (không có video cụ thể)
+      const isPlaylistPage = /youtube\.com\/playlist\b/i.test(s) && plId && !ytId;
+
+      // Mix / Radio (list=RD...) hoặc list kèm video share → LUÔN phát đúng video, không chạy cả mix
+      // (YouTube hay gắn list= vào link share → trước đây bị phát nhầm bài khác)
+      if (ytId && !isPlaylistPage) {
+        return {
+          type: 'youtube',
+          id: ytId,
+          src: s,
+          name: 'YouTube · ' + ytId
+        };
+      }
+
+      // Chỉ khi mở đúng trang playlist mới coi là playlist
+      if (isPlaylistPage || (plId && !ytId && (/[?&]list=/.test(s) || /^PL/i.test(plId)))) {
         return {
           type: 'youtube_playlist',
           playlistId: plId,
-          id: extractYouTubeId(url) || null,
-          src: url,
+          id: null,
+          src: s,
           name: 'Playlist YouTube'
         };
       }
-      const ytId = extractYouTubeId(url);
+
       if (ytId) {
-        return { type: 'youtube', id: ytId, src: url, name: 'YouTube · ' + ytId };
+        return { type: 'youtube', id: ytId, src: s, name: 'YouTube · ' + ytId };
       }
-      const driveId = extractGoogleDriveId(url);
+      const driveId = extractGoogleDriveId(s);
       if (driveId) {
         return {
           type: 'audio',
-          src: toPlayableAudioUrl(url),
+          src: toPlayableAudioUrl(s),
           name: 'Google Drive'
         };
       }
-      const name = (url.split('/').pop() || 'Nhạc URL').split('?')[0].slice(0, 40);
-      return { type: 'audio', src: toPlayableAudioUrl(url), name: name || 'Nhạc từ URL' };
+      const name = (s.split('/').pop() || 'Nhạc URL').split('?')[0].slice(0, 40);
+      return { type: 'audio', src: toPlayableAudioUrl(s), name: name || 'Nhạc từ URL' };
     }
 
     function renderPlaylistUI() {
