@@ -86,7 +86,7 @@
     body.theme-cosmic .galaxy-badge,
     body.theme-ember .galaxy-badge {
       border-color: var(--theme-accent);
-      box-shadow: 0 0 16px var(--theme-glow);
+      box-shadow: 0 0 16px var(--theme-glow), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     body.theme-golden .top-nav,
     body.theme-moonlight .top-nav,
@@ -1995,34 +1995,52 @@
       transform: translateX(-50%) translateY(0);
     }
 
-    /* ===== Multi-Galaxy ===== */
+    /* ===== Multi-Galaxy — icon mặt trời ===== */
     .galaxy-badge {
       position: relative;
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 4px;
-      padding: 0 10px;
+      justify-content: center;
+      gap: 0;
+      padding: 0;
+      width: 40px;
       height: 36px;
-      background: rgba(168, 85, 247, 0.22);
-      border: 1px solid rgba(168, 85, 247, 0.4);
-      border-radius: 14px;
-      font-size: 0.75rem;
+      background: linear-gradient(145deg, rgba(20, 16, 8, 0.92), rgba(8, 8, 14, 0.95));
+      border: 1.5px solid rgba(245, 230, 200, 0.55);
+      border-radius: 999px;
+      font-size: 1.15rem;
       font-weight: 600;
-      color: #e9d5ff;
-      max-width: 88px;
+      color: var(--gold-bright, #fef3c7);
+      max-width: none;
       overflow: visible;
       white-space: nowrap;
       cursor: pointer;
-      flex-shrink: 1;
-      min-width: 0;
+      flex-shrink: 0;
+      min-width: 40px;
+      box-shadow:
+        0 0 14px rgba(212, 168, 75, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      transition: all var(--transition-lux, 0.35s ease);
     }
-    .galaxy-badge > span {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 72px;
+    .galaxy-badge .galaxy-sun-icon {
+      display: block;
+      line-height: 1;
+      filter: drop-shadow(0 0 6px rgba(254, 240, 138, 0.55));
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .galaxy-badge > span:not(.galaxy-sun-icon) {
+      display: none; /* ẩn chữ, chỉ hiện icon mặt trời */
+    }
+    .galaxy-badge .cloud-status-pill {
+      display: none !important;
     }
     .galaxy-badge:hover {
-      background: rgba(168, 85, 247, 0.35);
+      background: linear-gradient(145deg, rgba(40, 28, 10, 0.95), rgba(16, 12, 8, 0.98));
+      border-color: rgba(254, 240, 138, 0.85);
+      box-shadow: 0 0 20px rgba(212, 168, 75, 0.45);
+    }
+    .galaxy-badge:hover .galaxy-sun-icon {
+      transform: rotate(45deg) scale(1.08);
     }
     .galaxy-card {
       background: linear-gradient(160deg, rgba(14, 12, 26, 0.96), rgba(8, 10, 20, 0.98));
@@ -2154,9 +2172,10 @@
       <span class="bar"></span>
     </button>
     <header class="top-nav" id="top-nav" role="toolbar" aria-label="Công cụ thiên hà">
-      <div class="galaxy-badge" id="galaxy-badge" data-tip="Thiên Hà Lời Chúc" aria-label="Thiên hà">
-        <span id="galaxy-name-label">Thiên Hà</span>
-        <span id="cloud-status" class="cloud-status-pill" data-mode="local" title="Trạng thái đồng bộ">Local</span>
+      <div class="galaxy-badge" id="galaxy-badge" data-tip="Thiên Hà Lời Chúc" aria-label="Thiên hà" role="button" tabindex="0">
+        <span class="galaxy-sun-icon" aria-hidden="true">☀️</span>
+        <span id="galaxy-name-label" hidden>Thiên Hà</span>
+        <span id="cloud-status" class="cloud-status-pill" data-mode="local" title="Trạng thái đồng bộ" hidden>Local</span>
       </div>
       <button id="btn-planet-menu" class="btn-icon" data-tip="Menu hành tinh · Focus nhanh" aria-label="Hành tinh" aria-expanded="false" aria-controls="planet-menu-panel">🪐</button>
       <button id="btn-track-prev-nav" class="btn-icon" data-tip="Bài trước" aria-label="Bài trước">⏮</button>
