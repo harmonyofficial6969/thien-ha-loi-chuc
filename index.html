@@ -1541,6 +1541,50 @@
       color: var(--gold-bright);
       box-shadow: 0 0 18px rgba(212, 168, 75, 0.4);
     }
+    /* Nút loop — icon SVG gọn, luxury */
+    .music-dock-btn.loop {
+      position: relative;
+      color: rgba(226, 232, 240, 0.55);
+    }
+    .music-dock-btn.loop svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .music-dock-btn.loop .loop-one {
+      position: absolute;
+      right: 5px;
+      bottom: 5px;
+      font-size: 0.55rem;
+      font-weight: 700;
+      line-height: 1;
+      color: currentColor;
+      opacity: 0.7;
+      pointer-events: none;
+      letter-spacing: 0;
+    }
+    .music-dock-btn.loop:hover {
+      color: var(--gold-bright, #fef3c7);
+    }
+    .music-dock-btn.loop-on {
+      background: linear-gradient(145deg, rgba(212, 168, 75, 0.28), rgba(254, 243, 199, 0.12));
+      border-color: rgba(245, 230, 200, 0.5);
+      color: var(--gold-bright, #fef3c7);
+      box-shadow: 0 0 16px rgba(212, 168, 75, 0.35);
+    }
+    .music-dock-btn.loop-on svg {
+      transform: rotate(90deg);
+    }
+    .music-dock-btn.loop-on .loop-one {
+      opacity: 1;
+      color: var(--gold-bright, #fef3c7);
+    }
     .music-dock-meta {
       min-width: 0;
       flex: 1;
@@ -2281,6 +2325,15 @@
       <button type="button" class="music-dock-btn" id="music-dock-prev" aria-label="Bài trước" title="Bài trước">⏮</button>
       <button type="button" class="music-dock-btn play" id="music-dock-play" aria-label="Phát / Tạm dừng" title="Phát / Tạm dừng">▶</button>
       <button type="button" class="music-dock-btn" id="music-dock-next" aria-label="Bài sau" title="Bài sau">⏭</button>
+      <button type="button" class="music-dock-btn loop" id="music-dock-loop" aria-label="Lặp một bài" title="Lặp một bài" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M17 2l4 4-4 4"/>
+          <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+          <path d="M7 22l-4-4 4-4"/>
+          <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+        </svg>
+        <span class="loop-one">1</span>
+      </button>
     </div>
     <div class="music-dock-meta">
       <div class="music-dock-title" id="music-dock-title">Chưa có nhạc</div>
@@ -2340,9 +2393,9 @@
       </button>
 
       <div class="form-item">
-        <label class="form-label">Dán link (mỗi dòng 1 link — YouTube / mp3 / Drive):</label>
+        <label class="form-label">Dán link (YouTube / mp3 / Drive)</label>
         <textarea id="input-music-url" class="form-textarea" rows="3"
-          placeholder="https://youtu.be/xxxx&#10;https://youtu.be/yyyy&#10;hoặc link mp3 / Google Drive"></textarea>
+          placeholder="https://youtu.be/xxxx"></textarea>
       </div>
 
       <button type="button" id="btn-apply-music" class="btn-apply-music">
@@ -2352,12 +2405,11 @@
       </button>
 
       <p class="music-hint">
-        • Khuyến nghị: chọn <b>file trên máy</b> (mp3/m4a) — ổn định nhất<br>
-        • YouTube: 1 link <b>playlist</b> (có list=) → phát cả list, ⏮ ⏭, lặp vô hạn<br>
-        • Nhiều link (xuống dòng) → playlist trên trang <b>không giới hạn số bài</b><br>
-        • Lưu ý: giới hạn ~50 chỉ xuất hiện nếu dán dãy ID kiểu cũ; playlist YouTube (PL…) không bị app cắt<br>
-        • Một số video YouTube chặn nhúng → thử video khác hoặc file mp3<br>
-        • Google Drive thường <b>không phát được</b> trên trình duyệt (chặn stream) — tránh dùng
+        • 1 link YouTube → phát đúng video đó<br>
+        • ⏭ bài sau → bài liên quan (Mix) · ⏮ → bài vừa nghe<br>
+        • Nút lặp trên dock → nghe lại 1 bài<br>
+        • Nhiều link → playlist trên trang · trang <code>/playlist?list=</code> → cả list<br>
+        • Video chặn nhúng → thử link khác · Drive hay lỗi stream
       </p>
     </div>
   </div>
@@ -3095,6 +3147,8 @@
     /** [{ id, title }] — stack bài đã nghe; prev pop ra phát lại */
     let ytPlayHistory = [];
     let ytHistoryIgnorePush = false; // đang phát từ prev → không push lại
+    /** Lặp đúng 1 bài đang nghe (bật bằng nút 🔁) */
+    let musicLoopOne = false;
 
     // ========== NHẠC NỀN MẶC ĐỊNH ==========
     // ĐÃ TẮT: link Google Drive mặc định thường bị trình duyệt chặn (CORS /
@@ -3359,6 +3413,16 @@
                   audioPlaying = false;
                   syncMusicUI();
                 } else if (e.data === YT.PlayerState.ENDED) {
+                  // Lặp 1 bài
+                  if (musicLoopOne) {
+                    try {
+                      e.target.seekTo(0);
+                      e.target.playVideo();
+                      audioPlaying = true;
+                      syncMusicUI();
+                    } catch (err) { }
+                    return;
+                  }
                   // Nhiều track trong app playlist
                   if (musicPlaylist.length > 1) {
                     playTrackAt((trackIndex + 1) % musicPlaylist.length, true);
@@ -3667,7 +3731,7 @@
             // giữ blob nếu cùng nguồn
           }
         } catch (e) { }
-        audioEl.loop = musicPlaylist.length <= 1;
+        audioEl.loop = !!musicLoopOne || musicPlaylist.length <= 1;
         audioEl.src = track.src;
         audioEl.load();
         if (autoPlay) {
@@ -3984,7 +4048,8 @@
         const status = audioPlaying
           ? '<span class="on">Đang phát</span>'
           : '<span class="off">Tạm dừng</span>';
-        dockSub.innerHTML = pos ? (status + ' · ' + pos) : status;
+        const loopTag = musicLoopOne ? ' · <span class="on">Lặp 1</span>' : '';
+        dockSub.innerHTML = (pos ? (status + ' · ' + pos) : status) + loopTag;
       }
       if (dockPlay) {
         if (audioPlaying) {
@@ -3997,6 +4062,19 @@
           dockPlay.setAttribute('aria-label', 'Phát');
         }
       }
+      const dockLoop = document.getElementById('music-dock-loop');
+      if (dockLoop) {
+        dockLoop.classList.toggle('loop-on', !!musicLoopOne);
+        dockLoop.setAttribute('aria-pressed', musicLoopOne ? 'true' : 'false');
+        dockLoop.title = musicLoopOne ? 'Đang lặp 1 bài — bấm để tắt' : 'Lặp một bài';
+        dockLoop.setAttribute('aria-label', musicLoopOne ? 'Tắt lặp một bài' : 'Lặp một bài');
+      }
+      try {
+        if (audioEl) {
+          // Bật loop 1 bài, hoặc chỉ 1 file audio và không có playlist dài
+          audioEl.loop = !!musicLoopOne || (musicMode === 'audio' && musicPlaylist.length <= 1);
+        }
+      } catch (e) { }
 
       if (audioPlaying) {
         if (label) label.textContent = short;
@@ -8102,8 +8180,15 @@
       playTrackAt(0, true);
     }
 
-    // Hết bài audio → bài tiếp (playlist)
+    // Hết bài audio
     audioEl.addEventListener('ended', () => {
+      if (musicLoopOne) {
+        try {
+          audioEl.currentTime = 0;
+          audioEl.play();
+        } catch (e) { }
+        return;
+      }
       if (musicPlaylist.length > 1) nextTrack();
       else {
         try {
@@ -8145,6 +8230,16 @@
         e.preventDefault();
         e.stopPropagation();
         toggleAudio();
+      });
+      document.getElementById('music-dock-loop')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        musicLoopOne = !musicLoopOne;
+        try {
+          if (audioEl) audioEl.loop = !!musicLoopOne;
+        } catch (err) { }
+        syncMusicUI();
+        showToast(musicLoopOne ? 'Đang lặp 1 bài' : 'Đã tắt lặp');
       });
     })();
 
