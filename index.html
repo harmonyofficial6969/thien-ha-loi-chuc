@@ -1912,26 +1912,26 @@
       position: relative;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
       padding: 0 10px;
       height: 36px;
       background: rgba(168, 85, 247, 0.22);
       border: 1px solid rgba(168, 85, 247, 0.4);
       border-radius: 14px;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 600;
       color: #e9d5ff;
-      max-width: 88px;
+      max-width: min(200px, 46vw);
       overflow: visible;
       white-space: nowrap;
       cursor: pointer;
-      flex-shrink: 1;
+      flex-shrink: 0;
       min-width: 0;
     }
-    .galaxy-badge > span {
+    .galaxy-badge > span#galaxy-name-label {
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 72px;
+      max-width: 140px;
     }
     .galaxy-badge:hover {
       background: rgba(168, 85, 247, 0.35);
@@ -2064,8 +2064,8 @@
       <span class="bar"></span>
     </button>
     <header class="top-nav" id="top-nav" role="toolbar" aria-label="Công cụ thiên hà">
-      <div class="galaxy-badge" id="galaxy-badge" data-tip="Thiên Hà Lời Chúc" aria-label="Thiên hà">
-        <span id="galaxy-name-label">Thiên Hà</span>
+      <div class="galaxy-badge" id="galaxy-badge" data-tip="Trung tâm thiên hà" aria-label="Trung tâm thiên hà">
+        <span id="galaxy-name-label">Trung tâm thiên hà</span>
         <span id="cloud-status" class="cloud-status-pill" data-mode="local" title="Trạng thái đồng bộ">Local</span>
       </div>
       <button id="btn-planet-menu" class="btn-icon" data-tip="Menu hành tinh · Focus nhanh" aria-label="Hành tinh" aria-expanded="false" aria-controls="planet-menu-panel">🪐</button>
@@ -2781,7 +2781,7 @@
 
     // ----- Một thiên hà duy nhất -----
     const currentGalaxySlug = 'chinh';
-    const currentGalaxyName = 'Thiên Hà';
+    const currentGalaxyName = 'Trung tâm thiên hà';
     currentTheme = THEME_PRESETS.golden;
     applyThemeToDOM(currentTheme);
 
@@ -2918,6 +2918,7 @@
     // ========== THREE.JS SETUP ==========
     let scene, camera, renderer, clock;
     let stars, sun, moon, wishSprites = []; // sprite chữ lời chúc (galaxy + earth)
+    let milkyWaySky = null; // bầu trời Ngân Hà (texture sphere)
     let asteroids = [];     // thiên thạch
     let spaceDust = null;   // bụi vũ trụ (Points)
     let impactFX = [];      // hạt va chạm thiên thạch
@@ -3869,6 +3870,51 @@
       stars = new THREE.Points(starGeo, starMat);
       stars.frustumCulled = false; // bao quanh camera
       scene.add(stars);
+
+      // ========== BẦU TRỜI NGÂN HÀ (photoreal sky band) ==========
+      // Texture media/milkyway-sky.png — sphere BackSide, additive, quay chậm
+      (function createMilkyWaySky() {
+        const skyLoader = new THREE.TextureLoader();
+        skyLoader.load(
+          'media/milkyway-sky.png',
+          function (tex) {
+            try {
+              if (tex.colorSpace !== undefined) tex.colorSpace = THREE.SRGBColorSpace || THREE.sRGBEncoding;
+              else if (THREE.sRGBEncoding !== undefined) tex.encoding = THREE.sRGBEncoding;
+              tex.minFilter = THREE.LinearFilter;
+              tex.magFilter = THREE.LinearFilter;
+              tex.wrapS = THREE.RepeatWrapping;
+              tex.wrapT = THREE.ClampToEdgeWrapping;
+              tex.needsUpdate = true;
+            } catch (e) {}
+            const skyR = isMobile ? 720 : 980;
+            const skyGeo = new THREE.SphereGeometry(skyR, isMobile ? 48 : 72, isMobile ? 24 : 36);
+            const skyMat = new THREE.MeshBasicMaterial({
+              map: tex,
+              side: THREE.BackSide,
+              transparent: true,
+              opacity: isMobile ? 0.48 : 0.58,
+              depthWrite: false,
+              depthTest: true,
+              fog: false,
+              blending: THREE.AdditiveBlending,
+              toneMapped: false
+            });
+            milkyWaySky = new THREE.Mesh(skyGeo, skyMat);
+            milkyWaySky.name = 'MilkyWaySky';
+            milkyWaySky.frustumCulled = false;
+            milkyWaySky.renderOrder = -10;
+            // Nghiêng dải Ngân Hà như mặt phẳng thiên hà
+            milkyWaySky.rotation.z = 0.42;
+            milkyWaySky.rotation.x = 0.18;
+            if (scene) scene.add(milkyWaySky);
+          },
+          undefined,
+          function (err) {
+            console.warn('[Sky] Không load được media/milkyway-sky.png', err);
+          }
+        );
+      })();
 
       // ========== MẶT TRỜI CHÂN THỰC ==========
       // Texture 2K + photosphere tự sáng + corona nhiều lớp (như ảnh NASA)
@@ -6822,6 +6868,8 @@
 
       // Nền sao xoay rất chậm — tự nhiên hơn
       if (stars) stars.rotation.y = t * 0.0035 * speedMultiplier;
+      // Dải Ngân Hà quay cực chậm (giữ tilt, chỉ yaw)
+      if (milkyWaySky) milkyWaySky.rotation.y = t * 0.0022 * speedMultiplier;
 
       // Idle hint
       if (performance.now() - lastInteraction > 10000) {
