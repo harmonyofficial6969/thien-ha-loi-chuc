@@ -3089,9 +3089,12 @@
     // Playlist: [{ type:'youtube'|'audio', id?, src?, name }]
     let musicPlaylist = [];
     let trackIndex = 0;
-    // Radio/Mix kiểu YouTube: 1 link → next/prev/hết bài chuyển bài liên quan (list=RD+videoId)
+    // Radio/Mix: next = bài liên quan; prev = bài vừa nghe (lịch sử)
     let ytRadioActive = false;
     let ytRadioSeedId = null;
+    /** [{ id, title }] — stack bài đã nghe; prev pop ra phát lại */
+    let ytPlayHistory = [];
+    let ytHistoryIgnorePush = false; // đang phát từ prev → không push lại
 
     // ========== NHẠC NỀN MẶC ĐỊNH ==========
     // ĐÃ TẮT: link Google Drive mặc định thường bị trình duyệt chặn (CORS /
@@ -3603,14 +3606,18 @@
               showToast('Link YouTube không hợp lệ');
               return false;
             }
-            // Bài mới → tắt radio cũ, phát đúng video seed
+            // Bài mới → tắt radio + xóa lịch sử cũ
             ytRadioActive = false;
             ytRadioSeedId = track.id;
+            ytPlayHistory = [];
+            ytHistoryIgnorePush = false;
             ytVideoId = track.id;
             await createYTPlayer({ videoId: track.id });
           } else {
             ytRadioActive = false;
             ytRadioSeedId = null;
+            ytPlayHistory = [];
+            ytHistoryIgnorePush = false;
             ytVideoId = null;
             await createYTPlayer({ playlistId: track.playlistId });
           }
@@ -3691,9 +3698,66 @@
       return isYtVideoId(videoId) ? ('RD' + videoId) : null;
     }
 
+    /** Video đang phát (id + title) */
+    function ytCurrentPlayingInfo() {
+      try {
+        if (ytPlayer && ytPlayer.getVideoData) {
+          const d = ytPlayer.getVideoData();
+          if (d && isYtVideoId(d.video_id)) {
+            return { id: d.video_id, title: d.title || ('YouTube · ' + d.video_id) };
+          }
+        }
+      } catch (e) { }
+      const track = musicPlaylist[trackIndex];
+      if (track && track.type === 'youtube' && isYtVideoId(track.id)) {
+        return { id: track.id, title: track.name || ('YouTube · ' + track.id) };
+      }
+      if (isYtVideoId(ytVideoId)) return { id: ytVideoId, title: currentMusicName || ytVideoId };
+      return null;
+    }
+
+    /** Lưu bài hiện tại vào lịch sử trước khi nhảy bài khác */
+    function ytPushHistory() {
+      if (ytHistoryIgnorePush) return;
+      const cur = ytCurrentPlayingInfo();
+      if (!cur || !isYtVideoId(cur.id)) return;
+      const last = ytPlayHistory.length ? ytPlayHistory[ytPlayHistory.length - 1] : null;
+      if (last && last.id === cur.id) return; // tránh trùng liên tiếp
+      ytPlayHistory.push(cur);
+      if (ytPlayHistory.length > 80) ytPlayHistory.shift();
+    }
+
+    /** Phát đúng 1 video theo id (dùng cho prev = bài vừa nghe) */
+    function ytPlayVideoId(videoId, title) {
+      if (!ytPlayer || !ytReady || !isYtVideoId(videoId)) return false;
+      try {
+        ytHistoryIgnorePush = true;
+        ytVideoId = videoId;
+        ytPlayer.loadVideoById({ videoId: videoId, startSeconds: 0 });
+        try { ytPlayer.unMute(); ytPlayer.setVolume(100); ytPlayer.playVideo(); } catch (e) { }
+        audioPlaying = true;
+        if (title) {
+          currentMusicName = title;
+          const track = musicPlaylist[trackIndex];
+          if (track && track.type === 'youtube') track.name = title;
+        }
+        setTimeout(function () {
+          ytHistoryIgnorePush = false;
+          try { syncYtPlaylistLabel(ytPlayer); } catch (e) { }
+          syncMusicUI();
+        }, 600);
+        return true;
+      } catch (e) {
+        ytHistoryIgnorePush = false;
+        console.warn('[Music] ytPlayVideoId', e);
+        return false;
+      }
+    }
+
     /**
-     * Bật / điều khiển radio từ 1 link YouTube (giống autoplay / mix trên YT).
-     * dir: 'next' | 'prev' | 'auto' (hết bài)
+     * dir: 'next' | 'prev' | 'auto'
+     * - next/auto: đẩy lịch sử → bài liên quan (Mix)
+     * - prev: lấy đúng bài vừa nghe từ lịch sử (không random)
      */
     function ytRadioStep(dir) {
       if (!ytPlayer || !ytReady) return false;
@@ -3701,35 +3765,38 @@
       if (!track || track.type !== 'youtube' || !isYtVideoId(track.id)) return false;
 
       try {
-        // Đã trong mix → next/prev trong list
+        // ===== PREV: chỉ quay lại bài đã nghe =====
+        if (dir === 'prev') {
+          if (!ytPlayHistory.length) {
+            showToast('Không còn bài trước');
+            return true; // đã xử lý (không nhảy lung tung)
+          }
+          const prev = ytPlayHistory.pop();
+          if (!prev || !isYtVideoId(prev.id)) {
+            showToast('Không còn bài trước');
+            return true;
+          }
+          return ytPlayVideoId(prev.id, prev.title);
+        }
+
+        // ===== NEXT / AUTO: lưu bài hiện tại → bài liên quan =====
+        ytPushHistory();
+
         if (ytRadioActive) {
-          if (dir === 'prev') {
-            const idx = (typeof ytPlayer.getPlaylistIndex === 'function') ? ytPlayer.getPlaylistIndex() : 0;
-            if (idx <= 0) {
-              const pl = (ytPlayer.getPlaylist && ytPlayer.getPlaylist()) || [];
-              if (pl.length > 1 && typeof ytPlayer.playVideoAt === 'function') {
-                ytPlayer.playVideoAt(pl.length - 1);
-              } else {
-                try { ytPlayer.previousVideo(); } catch (e) { }
-              }
+          const pl = (ytPlayer.getPlaylist && ytPlayer.getPlaylist()) || [];
+          const idx = (typeof ytPlayer.getPlaylistIndex === 'function') ? ytPlayer.getPlaylistIndex() : -1;
+          if (pl.length > 0 && idx >= 0 && idx >= pl.length - 1) {
+            const mix = ytMixListId(ytRadioSeedId || track.id);
+            if (mix && typeof ytPlayer.loadPlaylist === 'function') {
+              ytPlayer.loadPlaylist({ list: mix, listType: 'playlist', index: 0 });
+              setTimeout(function () {
+                try { ytPlayer.nextVideo(); } catch (e) { }
+              }, 500);
             } else {
-              ytPlayer.previousVideo();
+              try { ytPlayer.nextVideo(); } catch (e) { }
             }
           } else {
-            // next / auto
-            const pl = (ytPlayer.getPlaylist && ytPlayer.getPlaylist()) || [];
-            const idx = (typeof ytPlayer.getPlaylistIndex === 'function') ? ytPlayer.getPlaylistIndex() : -1;
-            if (pl.length > 0 && idx >= 0 && idx >= pl.length - 1) {
-              // Hết mix → load lại mix từ seed (vô hạn)
-              const mix = ytMixListId(ytRadioSeedId || track.id);
-              if (mix && typeof ytPlayer.loadPlaylist === 'function') {
-                ytPlayer.loadPlaylist({ list: mix, listType: 'playlist', index: 0 });
-              } else {
-                ytPlayer.nextVideo();
-              }
-            } else {
-              ytPlayer.nextVideo();
-            }
+            try { ytPlayer.nextVideo(); } catch (e) { }
           }
           audioPlaying = true;
           setTimeout(function () {
@@ -3739,51 +3806,28 @@
           return true;
         }
 
-        // Chưa bật mix → vào chế độ RD (Mix) từ video hiện tại
-        const seed = track.id;
+        // Lần đầu next: bật Mix từ video seed
+        const seed = (ytCurrentPlayingInfo() && ytCurrentPlayingInfo().id) || track.id;
         const mix = ytMixListId(seed);
         if (!mix || typeof ytPlayer.loadPlaylist !== 'function') return false;
         ytRadioActive = true;
         ytRadioSeedId = seed;
-        // next/auto: bắt đầu từ bài kế (index 1) nếu có; prev: giữ index 0 rồi previous
-        if (dir === 'prev') {
-          ytPlayer.loadPlaylist({ list: mix, listType: 'playlist', index: 0 });
-          setTimeout(function () {
-            try { ytPlayer.previousVideo(); } catch (e) { }
-          }, 600);
-        } else if (dir === 'next') {
-          ytPlayer.loadPlaylist({ list: mix, listType: 'playlist', index: 1 });
-          // Nếu mix chưa có index 1, fallback index 0 rồi next
-          setTimeout(function () {
-            try {
-              const pl = (ytPlayer.getPlaylist && ytPlayer.getPlaylist()) || [];
-              if (!pl.length) {
-                ytPlayer.loadPlaylist({ list: mix, listType: 'playlist', index: 0 });
-              }
-              try { ytPlayer.playVideo(); } catch (e) { }
-            } catch (e) { }
-          }, 700);
-        } else {
-          // auto (hết bài): vào mix, phát bài tiếp theo
-          ytPlayer.loadPlaylist({ list: mix, listType: 'playlist', index: 1 });
-          setTimeout(function () {
-            try {
-              const pl = (ytPlayer.getPlaylist && ytPlayer.getPlaylist()) || [];
-              if (pl.length <= 1) {
-                ytPlayer.loadPlaylist({ list: mix, listType: 'playlist', index: 0 });
-                setTimeout(function () { try { ytPlayer.nextVideo(); } catch (e) { } }, 400);
-              } else {
-                try { ytPlayer.playVideo(); } catch (e) { }
-              }
-            } catch (e) { }
-          }, 700);
-        }
-        audioPlaying = true;
-        showToast('Đang phát Mix YouTube · ⏭ bài liên quan');
+        ytPlayer.loadPlaylist({ list: mix, listType: 'playlist', index: 1 });
         setTimeout(function () {
+          try {
+            const pl = (ytPlayer.getPlaylist && ytPlayer.getPlaylist()) || [];
+            if (!pl.length || pl.length <= 1) {
+              ytPlayer.loadPlaylist({ list: mix, listType: 'playlist', index: 0 });
+              setTimeout(function () { try { ytPlayer.nextVideo(); } catch (e) { } }, 400);
+            } else {
+              try { ytPlayer.playVideo(); } catch (e) { }
+            }
+          } catch (e) { }
           try { syncYtPlaylistLabel(ytPlayer); } catch (e) { }
           syncMusicUI();
-        }, 900);
+        }, 700);
+        audioPlaying = true;
+        if (dir === 'next') showToast('Mix · bài liên quan');
         return true;
       } catch (e) {
         console.warn('[Music] ytRadioStep', e);
@@ -3872,6 +3916,8 @@
       ytVideoId = null;
       ytRadioActive = false;
       ytRadioSeedId = null;
+      ytPlayHistory = [];
+      ytHistoryIgnorePush = false;
       syncMusicUI();
     }
 
