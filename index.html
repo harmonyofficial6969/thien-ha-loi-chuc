@@ -3101,30 +3101,81 @@
     const fileInput = document.getElementById('music-file-input');
 
     // ========== YOUTUBE + GOOGLE DRIVE HELPERS ==========
+    /** Video ID YouTube = đúng 11 ký tự [A-Za-z0-9_-] */
+    function isYtVideoId(id) {
+      return typeof id === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(id);
+    }
+
+    /**
+     * Lấy video ID từ mọi dạng link YouTube phổ biến.
+     * Luôn lấy v= / path ID — KHÔNG dùng list= (mix/playlist hay làm phát nhầm bài).
+     */
     function extractYouTubeId(url) {
       if (!url) return null;
       const s = String(url).trim();
-      // Chỉ 11 ký tự = videoId thuần
-      if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
+      if (isYtVideoId(s)) return s;
+
+      // Thử parse URL chuẩn
+      try {
+        const raw = /^https?:\/\//i.test(s) ? s : ('https://' + s.replace(/^\/+/, ''));
+        const u = new URL(raw);
+        const host = (u.hostname || '').replace(/^www\./i, '').toLowerCase();
+
+        // youtu.be/VIDEOID
+        if (host === 'youtu.be' || host === 'youtube.com' && false) {
+          /* handled below */
+        }
+        if (host === 'youtu.be') {
+          const id = (u.pathname || '').split('/').filter(Boolean)[0] || '';
+          if (isYtVideoId(id)) return id;
+        }
+
+        if (host.indexOf('youtube.com') !== -1 || host.indexOf('youtube-nocookie.com') !== -1) {
+          // ?v=VIDEOID (watch, music.youtube, …)
+          const v = u.searchParams.get('v');
+          if (isYtVideoId(v)) return v;
+
+          // /embed/ID /shorts/ID /live/ID /v/ID /e/ID
+          const parts = (u.pathname || '').split('/').filter(Boolean);
+          const markers = { embed: 1, shorts: 1, live: 1, v: 1, e: 1 };
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (markers[parts[i]] && isYtVideoId(parts[i + 1])) return parts[i + 1];
+          }
+        }
+      } catch (e) { /* fallback regex */ }
+
       const patterns = [
-        /(?:youtube\.com\/watch\?(?:[^#]*&)?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/|music\.youtube\.com\/watch\?(?:[^#]*&)?v=)([a-zA-Z0-9_-]{11})/,
-        /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/,
-        /[?&]v=([a-zA-Z0-9_-]{11})/
+        /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+        /[?&]v=([a-zA-Z0-9_-]{11})/,
+        /youtube\.com\/(?:embed|shorts|live|v|e)\/([a-zA-Z0-9_-]{11})/,
+        /youtube-nocookie\.com\/(?:embed|v)\/([a-zA-Z0-9_-]{11})/
       ];
-      for (const p of patterns) {
-        const m = s.match(p);
-        if (m) return m[1];
+      for (let i = 0; i < patterns.length; i++) {
+        const m = s.match(patterns[i]);
+        if (m && isYtVideoId(m[1])) return m[1];
       }
       return null;
     }
 
-    /** Playlist YouTube: list=PLxxxx hoặc /playlist?list= */
+    /** Playlist ID — chỉ dùng khi URL là trang playlist (không có video cụ thể) */
     function extractYouTubePlaylistId(url) {
       if (!url) return null;
       const s = String(url).trim();
       if (/^PL[\w-]{10,}$/i.test(s)) return s;
+      try {
+        const raw = /^https?:\/\//i.test(s) ? s : ('https://' + s.replace(/^\/+/, ''));
+        const u = new URL(raw);
+        const list = u.searchParams.get('list');
+        if (list && /^[\w-]{10,}$/i.test(list)) return list;
+      } catch (e) { }
       const m = s.match(/[?&]list=([a-zA-Z0-9_-]+)/);
       return m ? m[1] : null;
+    }
+
+    /** true nếu URL là trang playlist YouTube (không phải video lẻ kèm list=) */
+    function isYouTubePlaylistPage(url) {
+      const s = String(url || '');
+      return /youtube\.com\/playlist\b/i.test(s) || /music\.youtube\.com\/playlist\b/i.test(s);
     }
 
     /** Lấy file ID từ link Google Drive */
@@ -3206,17 +3257,26 @@
             return;
           }
 
-          // Đã có player → ưu tiên 1 video cụ thể (tránh list=RD phát nhầm bài)
+          // Player sẵn → load đúng nguồn (1 video luôn thắng playlist)
           if (ytPlayer && ytReady) {
             try {
-              if (videoId && typeof ytPlayer.loadVideoById === 'function') {
+              if (videoId && isYtVideoId(videoId) && typeof ytPlayer.loadVideoById === 'function') {
+                // Cắt sạch playlist cũ nếu đang trong list
+                try {
+                  if (typeof ytPlayer.getPlaylist === 'function') {
+                    const pl = ytPlayer.getPlaylist();
+                    if (pl && pl.length) {
+                      // loadVideoById đủ để thoát playlist mode
+                    }
+                  }
+                } catch (e) { }
                 ytVideoId = videoId;
                 ytPlayer.loadVideoById({ videoId: videoId, startSeconds: 0 });
                 try { ytPlayer.unMute(); ytPlayer.setVolume(100); } catch (e) { }
                 done(resolve, ytPlayer);
                 return;
               }
-              if (playlistId && typeof ytPlayer.loadPlaylist === 'function') {
+              if (!videoId && playlistId && typeof ytPlayer.loadPlaylist === 'function') {
                 ytPlayer.loadPlaylist({ list: playlistId, listType: 'playlist', index: 0 });
                 ytVideoId = null;
                 try { ytPlayer.unMute(); ytPlayer.setVolume(100); } catch (e) { }
@@ -3387,8 +3447,23 @@
     function syncYtPlaylistLabel(player) {
       try {
         const track = musicPlaylist[trackIndex];
-        if (!track || track.type !== 'youtube_playlist') return;
+        if (!track) return;
         const data = player.getVideoData && player.getVideoData();
+        // Single video: cập nhật tên + chặn lệch ID
+        if (track.type === 'youtube') {
+          if (data && data.title) {
+            track.name = data.title;
+            currentMusicName = data.title;
+          }
+          if (data && data.video_id && track.id && data.video_id !== track.id) {
+            console.warn('[Music] lệch video, load lại', data.video_id, track.id);
+            try { player.loadVideoById({ videoId: track.id, startSeconds: 0 }); player.playVideo(); } catch (e) { }
+          }
+          syncMusicUI();
+          renderPlaylistUI();
+          return;
+        }
+        if (track.type !== 'youtube_playlist') return;
         const idx = typeof player.getPlaylistIndex === 'function' ? player.getPlaylistIndex() : 0;
         const list = typeof player.getPlaylist === 'function' ? player.getPlaylist() : null;
         const total = list && list.length ? list.length : '?';
@@ -3410,39 +3485,40 @@
         .filter(Boolean);
     }
 
+    /**
+     * Quy tắc rõ ràng:
+     * 1) Có video ID → phát ĐÚNG 1 video đó (bỏ qua list=RD / mix trong link share)
+     * 2) Trang /playlist?list=... không có video → playlist YouTube
+     * 3) Google Drive → audio stream
+     * 4) Còn lại → coi như URL audio trực tiếp
+     */
     function urlToTrack(url) {
       const s = String(url || '').trim();
+      if (!s) return null;
+
       const ytId = extractYouTubeId(s);
-      const plId = extractYouTubePlaylistId(s);
-
-      // Trang playlist thuần: youtube.com/playlist?list=PLxxxx (không có video cụ thể)
-      const isPlaylistPage = /youtube\.com\/playlist\b/i.test(s) && plId && !ytId;
-
-      // Mix / Radio (list=RD...) hoặc list kèm video share → LUÔN phát đúng video, không chạy cả mix
-      // (YouTube hay gắn list= vào link share → trước đây bị phát nhầm bài khác)
-      if (ytId && !isPlaylistPage) {
+      if (ytId) {
         return {
           type: 'youtube',
           id: ytId,
-          src: s,
+          src: 'https://www.youtube.com/watch?v=' + ytId,
           name: 'YouTube · ' + ytId
         };
       }
 
-      // Chỉ khi mở đúng trang playlist mới coi là playlist
-      if (isPlaylistPage || (plId && !ytId && (/[?&]list=/.test(s) || /^PL/i.test(plId)))) {
-        return {
-          type: 'youtube_playlist',
-          playlistId: plId,
-          id: null,
-          src: s,
-          name: 'Playlist YouTube'
-        };
+      if (isYouTubePlaylistPage(s)) {
+        const plId = extractYouTubePlaylistId(s);
+        if (plId) {
+          return {
+            type: 'youtube_playlist',
+            playlistId: plId,
+            id: null,
+            src: s,
+            name: 'Playlist · ' + plId.slice(0, 12)
+          };
+        }
       }
 
-      if (ytId) {
-        return { type: 'youtube', id: ytId, src: s, name: 'YouTube · ' + ytId };
-      }
       const driveId = extractGoogleDriveId(s);
       if (driveId) {
         return {
@@ -3451,8 +3527,14 @@
           name: 'Google Drive'
         };
       }
-      const name = (s.split('/').pop() || 'Nhạc URL').split('?')[0].slice(0, 40);
-      return { type: 'audio', src: toPlayableAudioUrl(s), name: name || 'Nhạc từ URL' };
+
+      // mp3 / m4a / direct media
+      const leaf = (s.split('/').pop() || 'Nhạc URL').split('?')[0].slice(0, 48);
+      return {
+        type: 'audio',
+        src: toPlayableAudioUrl(s),
+        name: leaf || 'Nhạc từ URL'
+      };
     }
 
     function renderPlaylistUI() {
@@ -3488,6 +3570,7 @@
       if (!musicPlaylist.length) return false;
       trackIndex = ((index % musicPlaylist.length) + musicPlaylist.length) % musicPlaylist.length;
       const track = musicPlaylist[trackIndex];
+      if (!track) return false;
       currentMusicName = track.name || ('Bài ' + (trackIndex + 1));
       renderPlaylistUI();
 
@@ -3502,12 +3585,21 @@
             audioEl.load();
           } catch (e) { }
           musicMode = 'youtube';
-          ytVideoId = track.id || null;
-          if (track.type === 'youtube_playlist') {
-            await createYTPlayer({ playlistId: track.playlistId, videoId: track.id });
-          } else {
+
+          if (track.type === 'youtube') {
+            if (!isYtVideoId(track.id)) {
+              console.warn('[Music] videoId không hợp lệ:', track.id, track.src);
+              showToast('Link YouTube không hợp lệ');
+              return false;
+            }
+            ytVideoId = track.id;
+            // Chỉ truyền videoId — tuyệt đối không kèm playlistId
             await createYTPlayer({ videoId: track.id });
+          } else {
+            ytVideoId = null;
+            await createYTPlayer({ playlistId: track.playlistId });
           }
+
           if (autoPlay) {
             try {
               await playMusic();
@@ -3516,6 +3608,28 @@
               audioPlaying = false;
             }
           }
+          // Lấy title thật từ player
+          try {
+            setTimeout(function () {
+              try {
+                if (ytPlayer && ytPlayer.getVideoData) {
+                  const d = ytPlayer.getVideoData();
+                  if (d && d.title) {
+                    track.name = d.title;
+                    currentMusicName = d.title;
+                    syncMusicUI();
+                    renderPlaylistUI();
+                  }
+                  // Xác nhận đang đúng video
+                  if (track.type === 'youtube' && d && d.video_id && d.video_id !== track.id) {
+                    console.warn('[Music] Player lệch ID, force load lại', d.video_id, '→', track.id);
+                    ytPlayer.loadVideoById({ videoId: track.id, startSeconds: 0 });
+                    try { ytPlayer.playVideo(); } catch (e2) { }
+                  }
+                }
+              } catch (e) { }
+            }, 800);
+          } catch (e) { }
           try { if (ytPlayer) syncYtPlaylistLabel(ytPlayer); } catch (e) { }
           syncMusicUI();
           return true;
@@ -7747,18 +7861,37 @@
       applyBtn.disabled = true;
       applyBtn.textContent = 'Đang thêm...';
       try {
-        const newTracks = urls.map(urlToTrack);
-        // Thêm vào playlist (không xóa bài cũ)
-        const startIdx = musicPlaylist.length;
-        musicPlaylist = musicPlaylist.concat(newTracks);
-        trackIndex = startIdx;
+        const newTracks = urls.map(urlToTrack).filter(Boolean);
+        // Bỏ track YouTube thiếu id
+        const valid = newTracks.filter(function (t) {
+          if (t.type === 'youtube') return isYtVideoId(t.id);
+          if (t.type === 'youtube_playlist') return !!t.playlistId;
+          if (t.type === 'audio') return !!t.src;
+          return false;
+        });
+        if (!valid.length) {
+          alert('Không đọc được link.\n• Dán link dạng: youtube.com/watch?v=... hoặc youtu.be/...\n• Hoặc file mp3 / Google Drive');
+          return;
+        }
+        // 1 link YouTube → thay playlist (tránh còn bài cũ làm loạn)
+        // Nhiều link → thêm vào cuối
+        if (valid.length === 1 && valid[0].type === 'youtube') {
+          musicPlaylist = valid.slice();
+          trackIndex = 0;
+        } else {
+          const startIdx = musicPlaylist.length;
+          musicPlaylist = musicPlaylist.concat(valid);
+          trackIndex = startIdx;
+        }
         const ok = await playTrackAt(trackIndex, true);
         closeModal('modal-music');
         document.getElementById('input-music-url').value = '';
-        if (ok) showToast(newTracks.length > 1
-          ? ('Đã thêm ' + newTracks.length + ' bài · ⏮ ⏭ để chuyển')
-          : ('Đang phát: ' + (newTracks[0].name || 'Nhạc')));
-        else if (musicMode === 'youtube') {
+        if (ok) {
+          const t0 = musicPlaylist[trackIndex];
+          showToast(valid.length > 1
+            ? ('Đã thêm ' + valid.length + ' bài · ⏮ ⏭ để chuyển')
+            : ('Đang phát: ' + ((t0 && t0.name) || 'Nhạc')));
+        } else if (musicMode === 'youtube') {
           alert('YouTube chưa phát được.\n• Video có thể chặn nhúng\n• Mở trang bằng http/https (không file://)\n• Thử video khác hoặc file mp3');
         }
       } catch (err) {
