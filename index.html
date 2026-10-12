@@ -1517,7 +1517,7 @@
       }
     }
 
-    /* ===== Mini queue sheet (kiểu Spotify NOW PLAYING) ===== */
+    /* ===== Mini queue sheet (Spotify-style NOW PLAYING) ===== */
     .music-dock-title,
     .music-dock-meta {
       cursor: pointer;
@@ -1535,7 +1535,7 @@
       background: #121212;
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 14px;
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(0,0,0,0.4);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65);
       overflow: hidden;
       pointer-events: auto;
       -webkit-tap-highlight-color: transparent;
@@ -2385,7 +2385,7 @@
     <button type="button" class="music-dock-btn music-dock-btn-add" id="music-dock-add" aria-label="Chọn nhạc" title="Chọn nhạc" style="flex-shrink:0;">♫</button>
   </div>
 
-  <!-- Mini queue — kiểu Spotify NOW PLAYING -->
+  <!-- Mini queue — Spotify-style -->
   <div id="music-mini-sheet" class="music-mini-sheet" role="dialog" aria-label="Đang phát" aria-hidden="true">
     <div class="music-mini-header">
       <span class="music-mini-now">Đang phát</span>
@@ -3507,6 +3507,12 @@
         if (currentEl) {
           currentEl.innerHTML = `<strong>Hiện tại:</strong> ${currentMusicName} (${idx + 1}/${total})`;
         }
+        try {
+          const mini = document.getElementById('music-mini-sheet');
+          if (mini && mini.classList.contains('open') && typeof renderMusicMiniList === 'function') {
+            renderMusicMiniList();
+          }
+        } catch (e2) { }
       } catch (e) { }
     }
 
@@ -7658,27 +7664,9 @@
       renderPlaylistUI();
     });
 
-    // ===== Mini queue sheet (kiểu Spotify) =====
-    function trackArtUrl(t) {
-      if (!t) return '';
-      if (t.art) return t.art;
-      if ((t.type === 'youtube' || t.type === 'youtube_playlist') && t.id) {
-        return 'https://i.ytimg.com/vi/' + t.id + '/mqdefault.jpg';
-      }
-      return '';
-    }
-    function trackArtistLabel(t) {
-      if (!t) return '';
-      if (t.artist) return t.artist;
-      if (t.type === 'youtube_playlist') return 'YouTube Playlist';
-      if (t.type === 'youtube') return 'YouTube';
-      if (t.type === 'audio') {
-        const n = t.name || '';
-        if (/\.(mp3|m4a|wav|ogg|aac|mp4|webm)$/i.test(n)) return 'File trên máy';
-        return 'Nhạc';
-      }
-      return '';
-    }
+    // ===== Mini queue sheet (Spotify-style + YouTube playlist) =====
+    var __ytTitleCache = {};
+
     function escapeHtmlMini(s) {
       return String(s || '')
         .replace(/&/g, '&amp;')
@@ -7687,45 +7675,144 @@
         .replace(/"/g, '&quot;');
     }
 
+    function fetchYtTitle(videoId, cb) {
+      if (!videoId) { cb(''); return; }
+      if (__ytTitleCache[videoId]) { cb(__ytTitleCache[videoId]); return; }
+      var url = 'https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + encodeURIComponent(videoId) + '&format=json';
+      fetch(url).then(function (r) { return r.json(); }).then(function (data) {
+        var t = (data && data.title) ? data.title : '';
+        var a = (data && data.author_name) ? data.author_name : '';
+        __ytTitleCache[videoId] = { title: t, artist: a };
+        cb(__ytTitleCache[videoId]);
+      }).catch(function () {
+        __ytTitleCache[videoId] = { title: '', artist: '' };
+        cb(__ytTitleCache[videoId]);
+      });
+    }
+
+    /** Xây danh sách hiển thị: app playlist HOẶC các video trong YT playlist */
+    function buildMiniQueueItems() {
+      var items = [];
+      // Ưu tiên: nếu đang phát 1 YT playlist và player có list → hiện từng video
+      try {
+        var cur = musicPlaylist[trackIndex];
+        if (cur && cur.type === 'youtube_playlist' && ytPlayer && ytReady && typeof ytPlayer.getPlaylist === 'function') {
+          var pl = ytPlayer.getPlaylist() || [];
+          var idx = (typeof ytPlayer.getPlaylistIndex === 'function') ? ytPlayer.getPlaylistIndex() : 0;
+          if (pl.length > 0) {
+            for (var i = 0; i < pl.length; i++) {
+              var vid = pl[i];
+              var cached = __ytTitleCache[vid] || {};
+              items.push({
+                kind: 'ytpl',
+                ytIndex: i,
+                videoId: vid,
+                name: cached.title || ('Bài ' + (i + 1)),
+                artist: cached.artist || 'YouTube',
+                art: 'https://i.ytimg.com/vi/' + vid + '/mqdefault.jpg',
+                active: i === idx
+              });
+            }
+            return items;
+          }
+        }
+      } catch (e) { }
+
+      // App-level playlist (nhiều link / file)
+      for (var j = 0; j < musicPlaylist.length; j++) {
+        var t = musicPlaylist[j];
+        var art = '';
+        var artist = '';
+        if (t.art) art = t.art;
+        else if ((t.type === 'youtube' || t.type === 'youtube_playlist') && t.id) {
+          art = 'https://i.ytimg.com/vi/' + t.id + '/mqdefault.jpg';
+        }
+        if (t.artist) artist = t.artist;
+        else if (t.type === 'youtube_playlist') artist = 'YouTube Playlist';
+        else if (t.type === 'youtube') artist = 'YouTube';
+        else if (t.type === 'audio') artist = 'File / URL';
+        items.push({
+          kind: 'app',
+          appIndex: j,
+          videoId: t.id || null,
+          name: t.name || ('Bài ' + (j + 1)),
+          artist: artist,
+          art: art,
+          active: j === trackIndex
+        });
+      }
+      return items;
+    }
+
     function renderMusicMiniList() {
-      const list = document.getElementById('music-mini-list');
+      var list = document.getElementById('music-mini-list');
       if (!list) return;
-      const n = musicPlaylist.length;
-      if (!n) {
+      var items = buildMiniQueueItems();
+      if (!items.length) {
         list.innerHTML = '<div class="music-mini-empty">Chưa có bài nào.<br>Bấm ♫ để thêm nhạc.</div>';
         return;
       }
-      list.innerHTML = musicPlaylist.map(function (t, i) {
-        const active = i === trackIndex ? ' active' : '';
-        const name = escapeHtmlMini(t.name || ('Bài ' + (i + 1)));
-        const artist = escapeHtmlMini(trackArtistLabel(t));
-        const art = trackArtUrl(t);
-        const artHtml = art
-          ? '<img class="mm-art" src="' + art + '" alt="" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><span class="mm-art-ph" style="display:none">🎵</span>'
+      list.innerHTML = items.map(function (it, i) {
+        var active = it.active ? ' active' : '';
+        var name = escapeHtmlMini(it.name);
+        var artist = escapeHtmlMini(it.artist);
+        var artHtml = it.art
+          ? '<img class="mm-art" src="' + it.art + '" alt="" loading="lazy" onerror="this.style.display=\'none\';var n=this.nextElementSibling;if(n)n.style.display=\'flex\'"><span class="mm-art-ph" style="display:none">🎵</span>'
           : '<span class="mm-art-ph">🎵</span>';
-        return '<button type="button" class="music-mini-item' + active + '" data-track-idx="' + i + '">' +
+        var dataAttrs = ' data-kind="' + it.kind + '"';
+        if (it.kind === 'ytpl') dataAttrs += ' data-yt-idx="' + it.ytIndex + '" data-vid="' + (it.videoId || '') + '"';
+        else dataAttrs += ' data-app-idx="' + it.appIndex + '"';
+        return '<button type="button" class="music-mini-item' + active + '"' + dataAttrs + '>' +
           '<span class="mm-play-ind">▶</span>' +
           artHtml +
           '<span class="mm-text"><span class="mm-name">' + name + '</span><span class="mm-artist">' + artist + '</span></span>' +
           '</button>';
       }).join('');
-      list.querySelectorAll('[data-track-idx]').forEach(function (el) {
+
+      list.querySelectorAll('.music-mini-item').forEach(function (el) {
         el.addEventListener('click', function (ev) {
           ev.preventDefault();
           ev.stopPropagation();
-          const i = parseInt(el.getAttribute('data-track-idx'), 10);
-          if (!isNaN(i)) {
-            playTrackAt(i, true);
-            renderMusicMiniList();
-            try {
-              const activeEl = list.querySelector('.music-mini-item.active');
-              if (activeEl) activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-            } catch (e) { }
+          var kind = el.getAttribute('data-kind');
+          if (kind === 'ytpl') {
+            var yi = parseInt(el.getAttribute('data-yt-idx'), 10);
+            if (!isNaN(yi) && ytPlayer && typeof ytPlayer.playVideoAt === 'function') {
+              try {
+                ytPlayer.playVideoAt(yi);
+                audioPlaying = true;
+                setTimeout(function () {
+                  try { syncYtPlaylistLabel(ytPlayer); } catch (e) { }
+                  syncMusicUI();
+                  renderMusicMiniList();
+                }, 350);
+              } catch (e) { }
+            }
+          } else {
+            var ai = parseInt(el.getAttribute('data-app-idx'), 10);
+            if (!isNaN(ai)) {
+              playTrackAt(ai, true);
+              renderMusicMiniList();
+            }
           }
+          try {
+            var activeEl = list.querySelector('.music-mini-item.active');
+            if (activeEl) activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          } catch (e) { }
         });
       });
+
+      // Lấy title oEmbed cho các video YT chưa có tên
+      items.forEach(function (it) {
+        if (!it.videoId) return;
+        if (__ytTitleCache[it.videoId] && __ytTitleCache[it.videoId].title) return;
+        fetchYtTitle(it.videoId, function () {
+          var sheet = document.getElementById('music-mini-sheet');
+          if (sheet && sheet.classList.contains('open')) renderMusicMiniList();
+        });
+      });
+
       try {
-        const activeEl = list.querySelector('.music-mini-item.active');
+        var activeEl = list.querySelector('.music-mini-item.active');
         if (activeEl) {
           setTimeout(function () {
             activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -7735,20 +7822,20 @@
     }
 
     function openMusicMiniSheet() {
-      const sheet = document.getElementById('music-mini-sheet');
+      var sheet = document.getElementById('music-mini-sheet');
       if (!sheet) return;
       renderMusicMiniList();
       sheet.classList.add('open');
       sheet.setAttribute('aria-hidden', 'false');
     }
     function closeMusicMiniSheet() {
-      const sheet = document.getElementById('music-mini-sheet');
+      var sheet = document.getElementById('music-mini-sheet');
       if (!sheet) return;
       sheet.classList.remove('open');
       sheet.setAttribute('aria-hidden', 'true');
     }
     function toggleMusicMiniSheet() {
-      const sheet = document.getElementById('music-mini-sheet');
+      var sheet = document.getElementById('music-mini-sheet');
       if (!sheet) return;
       if (sheet.classList.contains('open')) closeMusicMiniSheet();
       else openMusicMiniSheet();
@@ -7757,7 +7844,9 @@
     function onDockTitleClick(e) {
       e.preventDefault();
       e.stopPropagation();
-      if (!musicPlaylist.length) {
+      // Có nguồn nhạc (playlist app hoặc đang youtube) → mở queue
+      var hasSrc = musicPlaylist.length > 0 || musicMode === 'youtube' || musicMode === 'audio';
+      if (!hasSrc) {
         openModal('modal-music');
         renderPlaylistUI();
         return;
@@ -7790,7 +7879,7 @@
       e.stopPropagation();
     });
     document.addEventListener('pointerdown', function (e) {
-      const sheet = document.getElementById('music-mini-sheet');
+      var sheet = document.getElementById('music-mini-sheet');
       if (!sheet || !sheet.classList.contains('open')) return;
       if (sheet.contains(e.target)) return;
       if (e.target.closest && (
