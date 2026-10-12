@@ -2197,7 +2197,7 @@
 
 <body>
   <!-- Audio player (local / direct mp3 links) -->
-  <audio id="bg-audio" loop preload="auto" playsinline></audio>
+  <audio id="bg-audio" preload="auto" playsinline></audio>
   <!-- YouTube: giữ trong viewport (off-screen âm dễ bị trình duyệt/YT dừng) -->
   <div id="yt-player-wrap" aria-hidden="true"
     style="position:fixed;left:0;bottom:0;width:200px;height:112px;opacity:0.02;pointer-events:none;overflow:hidden;z-index:0;">
@@ -3452,15 +3452,18 @@
                     }
                     return;
                   }
-                  // 1 video YouTube → tự chuyển bài liên quan (Mix), giống YouTube
+                  // 1 video YouTube → tự chuyển bài liên quan (Mix)
                   if (track && track.type === 'youtube') {
                     if (typeof ytRadioStep === 'function' && ytRadioStep('auto')) return;
+                    // Mix không khả dụng: dừng (không tự phát lại — tránh giống "loop" khi đã tắt)
+                    audioPlaying = false;
+                    syncMusicUI();
+                    showToast('Hết bài · bấm ⏭ để nghe bài liên quan');
+                    return;
                   }
-                  // Fallback: loop lại bài hiện tại
-                  try {
-                    e.target.seekTo(0);
-                    e.target.playVideo();
-                  } catch (err) { }
+                  // Không còn nhánh nào: dừng
+                  audioPlaying = false;
+                  syncMusicUI();
                 }
               },
               onError: (e) => {
@@ -3495,16 +3498,21 @@
             }
           };
 
-          // Ưu tiên 1 video — tránh dính list= từ link share (mix RD…) phát nhầm
+          // 1 video: KHÔNG set loop=1 + playlist=id (YT sẽ lặp mãi, ENDED không chuyển bài).
+          // Lặp 1 bài chỉ qua musicLoopOne trong onStateChange ENDED.
           if (videoId) {
             playerConfig.videoId = videoId;
-            playerVars.loop = 1;
-            // playlist = cùng videoId → loop 1 bài (API YT), không phải playlist khác
-            playerVars.playlist = videoId;
+            if (typeof musicLoopOne !== 'undefined' && musicLoopOne) {
+              playerVars.loop = 1;
+              playerVars.playlist = videoId;
+            }
           } else if (playlistId) {
             playerVars.listType = 'playlist';
             playerVars.list = playlistId;
-            playerVars.loop = 1;
+            // Playlist: chỉ lặp cả list khi user bật Lặp 1; không thì hết list dừng / app xử lý
+            if (typeof musicLoopOne !== 'undefined' && musicLoopOne) {
+              playerVars.loop = 1;
+            }
           } else {
             done(reject, new Error('Thiếu videoId hoặc playlistId'));
             return;
@@ -3731,7 +3739,7 @@
             // giữ blob nếu cùng nguồn
           }
         } catch (e) { }
-        audioEl.loop = !!musicLoopOne || musicPlaylist.length <= 1;
+        audioEl.loop = !!musicLoopOne; // không auto-loop khi 1 bài — ended handler xử lý
         audioEl.src = track.src;
         audioEl.load();
         if (autoPlay) {
@@ -4071,8 +4079,8 @@
       }
       try {
         if (audioEl) {
-          // Bật loop 1 bài, hoặc chỉ 1 file audio và không có playlist dài
-          audioEl.loop = !!musicLoopOne || (musicMode === 'audio' && musicPlaylist.length <= 1);
+          // Chỉ native-loop khi user bật Lặp 1 (để ended luôn fire khi tắt)
+          audioEl.loop = !!musicLoopOne;
         }
       } catch (e) { }
 
@@ -8180,22 +8188,34 @@
       playTrackAt(0, true);
     }
 
-    // Hết bài audio
+    // Hết bài audio — chỉ chạy khi audioEl.loop = false
     audioEl.addEventListener('ended', () => {
+      // Đồng bộ cờ: nếu HTML/JS vẫn loop thì bỏ qua (tránh race)
+      try {
+        if (audioEl.loop && musicLoopOne) {
+          audioEl.currentTime = 0;
+          const p = audioEl.play();
+          if (p && p.catch) p.catch(function () {});
+          return;
+        }
+      } catch (e) { }
       if (musicLoopOne) {
         try {
+          audioEl.loop = false; // dùng JS seek thay vì native loop khi cần
           audioEl.currentTime = 0;
-          audioEl.play();
+          const p = audioEl.play();
+          if (p && p.catch) p.catch(function () {});
         } catch (e) { }
         return;
       }
-      if (musicPlaylist.length > 1) nextTrack();
-      else {
-        try {
-          audioEl.currentTime = 0;
-          audioEl.play();
-        } catch (e) { }
+      // Tắt loop → chuyển bài nếu có playlist
+      if (musicPlaylist.length > 1) {
+        nextTrack();
+        return;
       }
+      // Chỉ 1 bài, không loop → dừng
+      audioPlaying = false;
+      syncMusicUI();
     });
 
     document.getElementById('btn-track-prev')?.addEventListener('click', prevTrack);
@@ -8236,10 +8256,43 @@
         e.stopPropagation();
         musicLoopOne = !musicLoopOne;
         try {
-          if (audioEl) audioEl.loop = !!musicLoopOne;
+          if (audioEl) {
+            // Tắt loop luôn clear native loop; chỉ 1 file thì vẫn có thể loop native khi bật
+            audioEl.loop = !!musicLoopOne && (musicMode !== 'audio' || musicPlaylist.length <= 1);
+            // Khi tắt loop với nhiều bài: bắt buộc false để sự kiện ended được fire
+            if (!musicLoopOne) audioEl.loop = false;
+          }
         } catch (err) { }
+        // YouTube: khi tắt Lặp 1, nạp lại video không qua playlist-loop để ENDED fire
+        try {
+          if (musicMode === 'youtube' && ytPlayer && ytReady) {
+            const track = musicPlaylist[trackIndex];
+            if (track && track.type === 'youtube' && isYtVideoId(track.id) && !ytRadioActive) {
+              const t = (typeof ytPlayer.getCurrentTime === 'function') ? (ytPlayer.getCurrentTime() || 0) : 0;
+              if (musicLoopOne) {
+                // Bật lặp: playlist=[id] + loop (API YT)
+                if (typeof ytPlayer.loadPlaylist === 'function') {
+                  ytPlayer.loadPlaylist({ playlist: [track.id], index: 0, startSeconds: t });
+                  setTimeout(function () {
+                    try { ytPlayer.seekTo(t, true); ytPlayer.playVideo(); } catch (e2) { }
+                  }, 350);
+                }
+              } else {
+                // Tắt lặp: loadVideoById — không còn playlist loop
+                if (typeof ytPlayer.loadVideoById === 'function') {
+                  ytPlayer.loadVideoById({ videoId: track.id, startSeconds: t });
+                  setTimeout(function () {
+                    try { ytPlayer.seekTo(t, true); ytPlayer.playVideo(); } catch (e2) { }
+                  }, 350);
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[Music] toggle loop YT', err);
+        }
         syncMusicUI();
-        showToast(musicLoopOne ? 'Đang lặp 1 bài' : 'Đã tắt lặp');
+        showToast(musicLoopOne ? 'Đang lặp 1 bài' : 'Đã tắt lặp · hết bài sẽ chuyển tiếp');
       });
     })();
 
