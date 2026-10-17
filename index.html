@@ -984,8 +984,6 @@
       text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
     }
 
-    /* Floating envelope only */
-
     /* ===== Lobby actions + return ===== */
 
     /* Nút vào thiên hà — góc trên trái, nhỏ gọn */
@@ -1199,21 +1197,7 @@
       background: transparent !important;
       box-shadow: none;
     }
-    .lobby-dot.spinning,
-    .lobby-dot.rolling-in,
-    .lobby-dot.rolling-out {
-      /* legacy no-op */
-    }
-    body.phase-lobby .music-dock {
-      bottom: max(12px, env(safe-area-inset-bottom)) !important;
-    }
-    body.phase-lobby .lobby-content {
-      margin-bottom: max(14%, 96px);
-    }
-
-    /* Sảnh: không hiện "chạm để bật nhạc" */
-
-    /* Visualizer sóng nhạc trên sảnh — hòa vào nền sảnh */
+    /* Sảnh: visualizer + dock nhạc (gộp 1 chỗ, không trùng rule) */
     .lobby-visualizer-wrap {
       position: absolute;
       left: 50%;
@@ -1225,7 +1209,6 @@
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.6s ease;
-      /* Mờ hai đầu + nhẹ giữa — như ánh sáng trong không khí, không khung cứng */
       -webkit-mask-image: linear-gradient(90deg,
         transparent 0%,
         rgba(0,0,0,0.35) 12%,
@@ -1261,14 +1244,6 @@
       opacity: 0 !important;
       pointer-events: none !important;
     }
-    /* Đẩy dock nhạc lên một chút tránh đè chấm */
-    body.phase-lobby .music-dock {
-      bottom: max(36px, calc(env(safe-area-inset-bottom) + 28px));
-    }
-    .lobby-content {
-      margin-bottom: max(8%, 36px);
-    }
-
     body.phase-lobby .music-dock {
       display: flex !important;
       z-index: 1002;
@@ -1277,12 +1252,7 @@
       transform: translateX(-50%);
       max-width: min(380px, calc(100vw - 28px));
       width: auto;
-    }
-    body.phase-lobby .music-dock.show {
       animation: none;
-    }
-    body.phase-lobby #audio-prompt {
-      z-index: 1003;
     }
     body.phase-lobby .menu-wrap {
       display: none !important;
@@ -1367,67 +1337,6 @@
     #canvas-container.hidden-phase {
       visibility: hidden;
       pointer-events: none;
-    }
-
-    .floating-envelope-btn {
-      position: fixed;
-      bottom: max(28px, env(safe-area-inset-bottom));
-      right: 18px;
-      z-index: 50;
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid #fff;
-      cursor: pointer;
-      opacity: 0;
-      transform: translateY(30px) scale(0.7);
-      pointer-events: none;
-      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-      text-decoration: none;
-      background: linear-gradient(135deg, #a855f7 0%, #00f0ff 100%);
-      box-shadow: 0 0 25px rgba(0, 240, 255, 0.8), 0 8px 30px rgba(0, 0, 0, 0.6);
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .floating-envelope-btn.visible {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-      pointer-events: auto;
-      animation: float-env 2.2s infinite ease-in-out;
-    }
-
-    @keyframes float-env {
-
-      0%,
-      100% {
-        transform: translateY(0) scale(1);
-      }
-
-      50% {
-        transform: translateY(-8px) scale(1.08);
-      }
-    }
-
-    .envelope-icon {
-      font-size: 1.8rem;
-    }
-
-    .envelope-badge {
-      position: absolute;
-      top: -6px;
-      right: -6px;
-      background: #f43f5e;
-      color: #fff;
-      font-size: 0.68rem;
-      font-weight: 700;
-      padding: 3px 6px;
-      border-radius: 12px;
-      border: 1px solid #fff;
-      box-shadow: 0 0 10px rgba(244, 63, 94, 0.8);
-      white-space: nowrap;
     }
 
     /* Audio prompt */
@@ -2327,8 +2236,6 @@
     <span>🏠</span><span>Sảnh</span>
   </button>
 
-  <!-- Floating envelope đã bỏ -->
-
   <!-- Audio prompt – hiện khi đã có nhạc nhưng chưa phát được (mobile policy) -->
   <div id="audio-prompt" class="audio-prompt-pill">
     <span>🎵</span>
@@ -2365,11 +2272,9 @@
   <div id="modal-letter" class="modal-overlay">
     <div class="letter-card">
       <button class="btn-close-modal" data-close="modal-letter">×</button>
-      <div class="letter-stamp">THƯ TỪ <br> CÁ MẬP GỬI DƯƠNG BB </div>
-      <div class="letter-to-title" id="letter-to">Gửi bạn...</div>
-      <div class="letter-content-text" id="letter-message">
-        Chúc bạn một mùa Trung Thu ấm áp, tràn đầy yêu thương và ánh trăng soi sáng mọi ước mơ 🌕✨
-      </div>
+      <div class="letter-stamp">LỜI CHÚC<br>TRONG THIÊN HÀ</div>
+      <div class="letter-to-title" id="letter-to">Lời chúc từ Thiên Hà</div>
+      <div class="letter-content-text" id="letter-message"></div>
       <div class="letter-from" id="letter-from">— Từ Thiên Hà Lời Chúc</div>
       <button type="button" id="btn-delete-this-wish" class="btn-delete-wish" style="display:none;"
         title="Xóa lời chúc này">
@@ -7904,6 +7809,7 @@
     // ========== PHASE: LOBBY <-> GALAXY ==========
     let appPhase = 'LOBBY'; // LOBBY | GALAXY
     let galaxyPaused = false;
+    let enterLocked = false;
 
     function setAppPhase(phase) {
       appPhase = phase;
@@ -7946,8 +7852,6 @@
         setTimeout(function () {
           if (loader) loader.style.display = 'none';
           setTimeout(function () {
-            const env = document.getElementById('floating-envelope');
-            if (env) env.classList.add('visible');
             syncMusicUI();
           }, 400);
         }, 600);
@@ -8012,8 +7916,6 @@
         loader.style.display = '';
         loader.classList.remove('fade-out');
       }
-      const env = document.getElementById('floating-envelope');
-      if (env) env.classList.remove('visible');
       // đóng menu / panel
       if (typeof window.__setMenuOpen === 'function') window.__setMenuOpen(false);
       try {
@@ -8027,7 +7929,6 @@
     }
 
 
-    let enterLocked = false;
     document.getElementById('btn-enter').addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -8535,21 +8436,8 @@
       deleteWishById(currentOpenWishId);
     });
 
-    // ===== Earth Panel =====
-    // Panel Trái Đất đã bỏ – gửi lời chúc xuống Earth vẫn qua form ✨ + checkbox
-    if (false) document.getElementById('btn-send-to-earth')?.addEventListener('click', () => {
-      updateWishCountUI();
-      openModal('modal-wish');
-      const toEarthEl = document.getElementById('input-wish-to-earth');
-      if (toEarthEl) toEarthEl.checked = true;
-      const ta = document.getElementById('input-wish-text');
-      if (ta) setTimeout(() => ta.focus(), 200);
-      if (!canSendWishToday()) {
-        showToast('Hết ' + DAILY_LIMIT + ' lượt hôm nay 🌙');
-      }
-    });
+    // Gửi lời chúc xuống Trái Đất: checkbox trong form ✨ (panel Earth UI đã bỏ)
 
-    // Prevent context menu
     // Dừng render khi tab ẩn – tiết kiệm pin & GPU
     document.addEventListener('visibilitychange', () => {
       pageVisible = document.visibilityState === 'visible';
@@ -8560,7 +8448,7 @@
         }
         return;
       }
-      if (renderer && !rafId) {
+      if (renderer && !rafId && appPhase === 'GALAXY' && !galaxyPaused) {
         if (clock) clock.getDelta();
         animate();
       }
