@@ -1213,23 +1213,41 @@
 
     /* Sảnh: không hiện "chạm để bật nhạc" */
 
-    /* Visualizer sóng nhạc trên sảnh — luxury wave */
+    /* Visualizer sóng nhạc trên sảnh — hòa vào nền sảnh */
     .lobby-visualizer-wrap {
       position: absolute;
       left: 50%;
-      bottom: max(108px, calc(env(safe-area-inset-bottom) + 96px));
+      bottom: max(118px, calc(env(safe-area-inset-bottom) + 104px));
       transform: translateX(-50%);
       z-index: 7;
-      width: min(420px, 88vw);
-      height: 72px;
+      width: min(520px, 96vw);
+      height: 80px;
       pointer-events: none;
       opacity: 0;
-      transition: opacity 0.45s ease;
-      filter: drop-shadow(0 0 12px rgba(168, 130, 255, 0.35))
-              drop-shadow(0 0 28px rgba(192, 132, 252, 0.2));
+      transition: opacity 0.6s ease;
+      /* Mờ hai đầu + nhẹ giữa — như ánh sáng trong không khí, không khung cứng */
+      -webkit-mask-image: linear-gradient(90deg,
+        transparent 0%,
+        rgba(0,0,0,0.35) 12%,
+        rgba(0,0,0,0.85) 28%,
+        rgba(0,0,0,1) 42%,
+        rgba(0,0,0,1) 58%,
+        rgba(0,0,0,0.85) 72%,
+        rgba(0,0,0,0.35) 88%,
+        transparent 100%);
+      mask-image: linear-gradient(90deg,
+        transparent 0%,
+        rgba(0,0,0,0.35) 12%,
+        rgba(0,0,0,0.85) 28%,
+        rgba(0,0,0,1) 42%,
+        rgba(0,0,0,1) 58%,
+        rgba(0,0,0,0.85) 72%,
+        rgba(0,0,0,0.35) 88%,
+        transparent 100%);
+      filter: blur(0.3px);
     }
     .lobby-visualizer-wrap.on {
-      opacity: 1;
+      opacity: 0.88;
     }
     #lobby-visualizer {
       display: block;
@@ -2298,7 +2316,7 @@
 
     <!-- Nút vào thiên hà — góc trái, nhỏ -->
     <div class="lobby-visualizer-wrap" id="lobby-visualizer-wrap" aria-hidden="true">
-      <canvas id="lobby-visualizer" width="420" height="72"></canvas>
+      <canvas id="lobby-visualizer" width="520" height="80"></canvas>
     </div>
     <button type="button" class="btn-enter-mini" id="btn-enter" aria-label="Vào Thiên Hà" title="Vào Thiên Hà">✦</button>
 
@@ -7422,8 +7440,8 @@
       if (!ctx) return;
 
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = canvas.clientWidth || 400;
-      const h = canvas.clientHeight || 72;
+      const w = canvas.clientWidth || 480;
+      const h = canvas.clientHeight || 80;
       if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
         canvas.width = Math.floor(w * dpr);
         canvas.height = Math.floor(h * dpr);
@@ -7431,54 +7449,59 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
 
-      // Energy từ analyser hoặc pseudo-wave (YouTube / không bắt được tần số)
-      let energy = 0.18;
+      // Energy — mượt hơn, không nhảy mạnh (hòa với không khí sảnh)
+      let energy = 0.12;
       const canAnalyse = musicMode === 'audio' && audioPlaying && lobbyAnalyser && lobbyVizData;
       if (canAnalyse) {
         lobbyAnalyser.getByteFrequencyData(lobbyVizData);
         let sum = 0;
         const n = lobbyVizData.length;
         for (let i = 0; i < n; i++) sum += lobbyVizData[i];
-        energy = Math.min(1, (sum / n / 255) * 1.55);
+        energy = Math.min(0.95, (sum / n / 255) * 1.35);
       } else if (audioPlaying) {
-        lobbyVizPseudo += 0.065;
-        energy = 0.28 + 0.42 * (0.5 + 0.5 * Math.sin(lobbyVizPseudo * 0.9));
+        lobbyVizPseudo += 0.048;
+        energy = 0.22 + 0.38 * (0.5 + 0.5 * Math.sin(lobbyVizPseudo * 0.75));
       } else {
-        energy = 0.06;
+        energy = 0.04;
       }
 
-      const midY = h * 0.5;
-      const amp = h * 0.38 * Math.max(0.12, energy);
+      const midY = h * 0.52;
+      const amp = h * 0.32 * Math.max(0.1, energy);
       const t = performance.now() * 0.001;
 
-      // Lớp sóng luxury — nhiều sine chồng, glow tím-lavender như ảnh tham chiếu
+      // Lớp sóng mờ, màu trung tính-tím nhẹ — như ánh sương trong không khí sảnh
+      // Không neon gắt; alpha thấp để nền ảnh/video vẫn lộ qua
       const layers = [
-        { freq: 2.15, phase: 0.0,   speed: 1.15, ampMul: 1.00, color: 'rgba(232, 180, 255, 0.95)', width: 2.4, blur: 0 },
-        { freq: 1.55, phase: 1.2,   speed: 0.82, ampMul: 0.72, color: 'rgba(192, 132, 252, 0.55)', width: 3.6, blur: 0 },
-        { freq: 2.85, phase: 2.4,   speed: 1.45, ampMul: 0.48, color: 'rgba(167, 139, 250, 0.40)', width: 2.0, blur: 0 },
-        { freq: 1.25, phase: 0.6,   speed: 0.55, ampMul: 0.88, color: 'rgba(221, 214, 254, 0.28)', width: 5.5, blur: 0 },
-        { freq: 3.40, phase: 3.1,   speed: 1.75, ampMul: 0.32, color: 'rgba(250, 245, 255, 0.75)', width: 1.3, blur: 0 }
+        { freq: 1.85, phase: 0.0,  speed: 0.72, ampMul: 1.00, alpha: 0.42, width: 1.8 },
+        { freq: 1.35, phase: 1.4,  speed: 0.55, ampMul: 0.78, alpha: 0.28, width: 3.2 },
+        { freq: 2.45, phase: 2.6,  speed: 0.95, ampMul: 0.52, alpha: 0.22, width: 1.5 },
+        { freq: 1.10, phase: 0.7,  speed: 0.38, ampMul: 0.90, alpha: 0.16, width: 5.0 },
+        { freq: 2.95, phase: 3.2,  speed: 1.15, ampMul: 0.36, alpha: 0.30, width: 1.1 }
       ];
 
-      // Soft outer glow pass (wide, low opacity)
+      function waveY(nx, L, a) {
+        const env = Math.pow(Math.sin(Math.PI * nx), 1.15); // envelope mềm hơn
+        return midY
+          + Math.sin(nx * Math.PI * L.freq + t * L.speed + L.phase) * a * env
+          + Math.sin(nx * Math.PI * (L.freq * 0.42) + t * L.speed * 0.65 + L.phase * 1.25) * a * 0.32 * env;
+      }
+
+      // Pass 1: soft bloom (additive, alpha thấp)
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
       layers.forEach(function (L, li) {
         const a = amp * L.ampMul;
-        const glowAlpha = (0.12 + energy * 0.18) * (1 - li * 0.12);
-        ctx.strokeStyle = 'rgba(180, 140, 255, ' + glowAlpha.toFixed(3) + ')';
-        ctx.lineWidth = L.width + 10;
+        const ga = (0.06 + energy * 0.12) * (1 - li * 0.1) * L.alpha;
+        ctx.strokeStyle = 'rgba(186, 160, 230, ' + ga.toFixed(3) + ')';
+        ctx.lineWidth = L.width + 14;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.beginPath();
-        const steps = Math.max(48, Math.floor(w / 4));
+        const steps = Math.max(40, Math.floor(w / 5));
         for (let i = 0; i <= steps; i++) {
-          const x = (i / steps) * w;
           const nx = i / steps;
-          // envelope: mạnh giữa, mờ hai đầu (hình sóng cổ điển)
-          const env = Math.sin(Math.PI * nx);
-          const y = midY + Math.sin(nx * Math.PI * L.freq + t * L.speed + L.phase) * a * env
-            + Math.sin(nx * Math.PI * (L.freq * 0.45) + t * L.speed * 0.7 + L.phase * 1.3) * a * 0.35 * env;
+          const x = nx * w;
+          const y = waveY(nx, L, a);
           if (i === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
@@ -7486,43 +7509,55 @@
       });
       ctx.restore();
 
-      // Core sharp waves
+      // Pass 2: core waves — tím nhạt / trắng sữa, alpha vừa phải
       layers.forEach(function (L) {
         const a = amp * L.ampMul;
-        ctx.strokeStyle = L.color;
+        const baseA = (0.35 + energy * 0.45) * L.alpha;
+        // gradient ngang: giữa sáng hơn, hai đầu mờ (cùng mask CSS)
+        const grad = ctx.createLinearGradient(0, 0, w, 0);
+        grad.addColorStop(0, 'rgba(200, 180, 240, 0)');
+        grad.addColorStop(0.2, 'rgba(210, 190, 245, ' + (baseA * 0.55).toFixed(3) + ')');
+        grad.addColorStop(0.5, 'rgba(230, 215, 255, ' + baseA.toFixed(3) + ')');
+        grad.addColorStop(0.8, 'rgba(210, 190, 245, ' + (baseA * 0.55).toFixed(3) + ')');
+        grad.addColorStop(1, 'rgba(200, 180, 240, 0)');
+        ctx.strokeStyle = grad;
         ctx.lineWidth = L.width;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.beginPath();
-        const steps = Math.max(64, Math.floor(w / 3));
+        const steps = Math.max(56, Math.floor(w / 3.5));
         for (let i = 0; i <= steps; i++) {
-          const x = (i / steps) * w;
           const nx = i / steps;
-          const env = Math.sin(Math.PI * nx);
-          const y = midY + Math.sin(nx * Math.PI * L.freq + t * L.speed + L.phase) * a * env
-            + Math.sin(nx * Math.PI * (L.freq * 0.45) + t * L.speed * 0.7 + L.phase * 1.3) * a * 0.35 * env;
+          const x = nx * w;
+          const y = waveY(nx, L, a);
           if (i === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
         ctx.stroke();
       });
 
-      // Highlight center ridge (bright white-lavender core)
-      if (energy > 0.1) {
+      // Pass 3: highlight mỏng giữa — chỉ khi có nhạc thật
+      if (energy > 0.15) {
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
-        ctx.strokeStyle = 'rgba(255, 250, 255, ' + (0.25 + energy * 0.35).toFixed(3) + ')';
-        ctx.lineWidth = 1.1;
+        const ha = 0.12 + energy * 0.22;
+        const gradH = ctx.createLinearGradient(0, 0, w, 0);
+        gradH.addColorStop(0, 'rgba(255, 250, 255, 0)');
+        gradH.addColorStop(0.35, 'rgba(255, 250, 255, ' + (ha * 0.5).toFixed(3) + ')');
+        gradH.addColorStop(0.5, 'rgba(255, 252, 255, ' + ha.toFixed(3) + ')');
+        gradH.addColorStop(0.65, 'rgba(255, 250, 255, ' + (ha * 0.5).toFixed(3) + ')');
+        gradH.addColorStop(1, 'rgba(255, 250, 255, 0)');
+        ctx.strokeStyle = gradH;
+        ctx.lineWidth = 1.0;
         ctx.lineCap = 'round';
         ctx.beginPath();
-        const steps = Math.max(64, Math.floor(w / 3));
-        const a = amp * 0.55;
+        const steps = Math.max(56, Math.floor(w / 3.5));
+        const a = amp * 0.5;
+        const L0 = layers[0];
         for (let i = 0; i <= steps; i++) {
-          const x = (i / steps) * w;
           const nx = i / steps;
-          const env = Math.sin(Math.PI * nx);
-          const y = midY + Math.sin(nx * Math.PI * 2.15 + t * 1.15) * a * env
-            + Math.sin(nx * Math.PI * 0.97 + t * 0.8 + 1.2) * a * 0.3 * env;
+          const x = nx * w;
+          const y = waveY(nx, L0, a);
           if (i === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
