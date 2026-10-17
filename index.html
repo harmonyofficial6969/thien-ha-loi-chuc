@@ -2327,11 +2327,7 @@
     <span>🏠</span><span>Sảnh</span>
   </button>
 
-  <!-- Floating envelope only -->
-  <div id="floating-envelope" class="floating-envelope-btn" title="Mở thư bí mật">
-    <div class="envelope-icon">💌</div>
-    <div class="envelope-badge">1 thư mới</div>
-  </div>
+  <!-- Floating envelope đã bỏ -->
 
   <!-- Audio prompt – hiện khi đã có nhạc nhưng chưa phát được (mobile policy) -->
   <div id="audio-prompt" class="audio-prompt-pill">
@@ -2476,35 +2472,14 @@
   <script>
     // ========== SINGLE GALAXY + DATA LAYER ==========
     // Chỉ 1 thiên hà duy nhất — không tạo / chuyển / registry multi-galaxy.
-    const DEFAULT_WISHES = [
-      { id: 'd1', text: "Gia đình sum vầy, ấm áp tình thân 👨‍👩‍👧‍👦", author: "", createdAt: Date.now() },
-      { id: 'd2', text: "Một mùa trăng an nhiên và tình lặng 🌕", author: "", createdAt: Date.now() },
-      { id: 'd3', text: "Ấm áp nghĩa tình, trọn vẹn yêu thương 💕", author: "", createdAt: Date.now() },
-      { id: 'd4', text: "Chúc Dương luôn rạng rỡ như ánh trăng rằm", author: "", createdAt: Date.now() },
-      { id: 'd5', text: "Trọn vẹn yêu thương, trọn vẹn ước mơ 💖", author: "", createdAt: Date.now() },
-      { id: 'd6', text: "Tâm an vạn sự an, đời đời vui vẻ 🙏", author: "", createdAt: Date.now() },
-      { id: 'd7', text: "Chúc Dương vạn dặm bình an, hạnh phúc 🏠", author: "", createdAt: Date.now() },
-      { id: 'd8', text: "Ánh trăng soi sáng mọi ước mơ", author: "", createdAt: Date.now() },
-      { id: 'd9', text: "Đêm trăng trên sông tỏa tắm lòng son 🌊", author: "", createdAt: Date.now() },
-      { id: 'd10', text: "Vạn sự như ý, tỷ sự như mơ ✨", author: "", createdAt: Date.now() },
-      { id: 'd11', text: "Tình chúng ta gắn kết, bền chặt dài lâu 🤝", author: "", createdAt: Date.now() },
-      { id: 'd12', text: "Ước vọng vươn cao chạm tới ngân hà 🌌", author: "", createdAt: Date.now() },
-      { id: 'd13', text: "Mọi khó khăn đều hóa thành mây khói", author: "", createdAt: Date.now() },
-      { id: 'd14', text: "Hạnh phúc đơn giản, vẹn tròn như trăng", author: "", createdAt: Date.now() },
-      { id: 'd15', text: "Chúc Dương luôn rạng rỡ như ánh trăng rằm", author: "", createdAt: Date.now() },
-      { id: 'd16', text: "Trăng vàng soi bóng, hạnh phúc bên nhau", author: "", createdAt: Date.now() },
-      { id: 'd17', text: "Cầu chúc thành công việc hanh thông, thành đạt 🏆", author: "", createdAt: Date.now() },
-      { id: 'd18', text: "Hương sen thơm thoảng giữa đêm trăng thu", author: "", createdAt: Date.now() },
-      { id: 'd19', text: "Mọi khó khăn đều hóa thành mây khói ☁️", author: "", createdAt: Date.now() },
-      { id: 'd20', text: "Chúc Dương luôn mạnh khỏe và bình an", author: "", createdAt: Date.now() },
-    ];
+    const DEFAULT_WISHES = [];
 
     const DAILY_LIMIT = 3;
     const ICONS = ["⭐", "✨", "💫", "🌟", "🐰", "🌸", "💖", "🌙", "☄️", "🪐", "🦄", "🍭", "🎀", "🦋", "☁️", "🧸"];
-    // Storage 1 thiên hà cố định
-    const WISHES_KEY = 'thienha_wishes_v5_chinh';
-    const OLD_WISHES_KEY = 'thienha_wishes_v5';
-    const DAILY_LIMIT_KEY = 'thienha_daily_limit_v5_chinh';
+    // Storage 1 thiên hà cố định (v6: xóa hết lời chúc mặc định cũ)
+    const WISHES_KEY = 'thienha_wishes_v6_empty';
+    const OLD_WISHES_KEY = 'thienha_wishes_v5_chinh';
+    const DAILY_LIMIT_KEY = 'thienha_daily_limit_v6';
 
     /**
      * SafeStorage — tránh crash sandbox/iframe
@@ -2968,15 +2943,7 @@
 
     /** Migrate data cũ → key cố định */
     function migrateOldWishesIfNeeded() {
-      try {
-        if (safeStorage.getItem(WISHES_KEY)) return;
-        const oldRaw = safeStorage.getItem(OLD_WISHES_KEY);
-        if (!oldRaw) return;
-        const parsed = JSON.parse(oldRaw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          safeStorage.setItem(WISHES_KEY, oldRaw);
-        }
-      } catch (e) {}
+      // v6: không migrate lời chúc cũ — thiên hà bắt đầu trống
     }
     migrateOldWishesIfNeeded();
 
@@ -8487,22 +8454,7 @@
       openModal('modal-letter');
     }
 
-    // Envelope / Letter đặc biệt (URL params)
-    document.getElementById('floating-envelope').addEventListener('click', () => {
-      const params = new URLSearchParams(location.search);
-      const to = params.get('to') || 'DƯƠNG BB 😗';
-      const from = params.get('from') || 'CAMAPTRENBO';
-      const msg = params.get('msg') || 'Chúc Dương một mùa Trung Thu ấm áp, tràn đầy yêu thươnggggggggggggggg 🌕✨';
-      document.getElementById('letter-to').textContent = `Gửi ${to}`;
-      document.getElementById('letter-message').textContent = msg;
-      document.getElementById('letter-from').textContent = `— ${from}`;
-      const stamp = document.querySelector('.letter-stamp');
-      if (stamp) stamp.innerHTML = 'THƯ TỪ <br> CÁ MẬP GỬI DƯƠNG BB ';
-      currentOpenWishId = null;
-      const btnDel = document.getElementById('btn-delete-this-wish');
-      if (btnDel) btnDel.style.display = 'none';
-      openModal('modal-letter');
-    });
+    // Envelope / Letter đặc biệt — đã bỏ nút "1 thư mới"
 
     // Close modals
     document.querySelectorAll('[data-close]').forEach(btn => {
