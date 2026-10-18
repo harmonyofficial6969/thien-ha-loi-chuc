@@ -1680,39 +1680,56 @@
       background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(212, 168, 75, 0.06) 100%);
       padding: 18px 16px;
       border-radius: 18px;
-      margin-bottom: 18px;
+      margin-bottom: 12px;
       border: 1px solid rgba(255, 255, 255, 0.06);
     }
 
+    .letter-date {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #94a3b8;
+      letter-spacing: 0.02em;
+      margin-bottom: 14px;
+      opacity: 0.95;
+    }
+    .letter-date:empty {
+      display: none;
+    }
+
     .letter-from {
-      .btn-delete-wish {
-        margin: 18px auto 0;
-        width: 48px;
-        height: 48px;
-        padding: 0;
-        border: 1px solid rgba(248, 113, 113, 0.4);
-        border-radius: 50%;
-        background: rgba(127, 29, 29, 0.35);
-        color: #fca5a5;
-        cursor: pointer;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.25s ease;
-      }
+      font-size: 0.92rem;
+      color: var(--gold);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
 
-      .btn-delete-wish:hover {
-        background: rgba(185, 28, 28, 0.7);
-        border-color: #f87171;
-        color: #fff;
-        box-shadow: 0 0 16px rgba(248, 113, 113, 0.5);
-        transform: scale(1.1);
-      }
+    .btn-delete-wish {
+      margin: 18px auto 0;
+      width: 48px;
+      height: 48px;
+      padding: 0;
+      border: 1px solid rgba(248, 113, 113, 0.4);
+      border-radius: 50%;
+      background: rgba(127, 29, 29, 0.35);
+      color: #fca5a5;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s ease;
+    }
 
-      .btn-delete-wish svg {
-        display: block;
-        pointer-events: none;
-      }
+    .btn-delete-wish:hover {
+      background: rgba(185, 28, 28, 0.7);
+      border-color: #f87171;
+      color: #fff;
+      box-shadow: 0 0 16px rgba(248, 113, 113, 0.5);
+      transform: scale(1.1);
+    }
+
+    .btn-delete-wish svg {
+      display: block;
+      pointer-events: none;
     }
 
     /* Music modal — luxury */
@@ -2273,8 +2290,9 @@
     <div class="letter-card">
       <button class="btn-close-modal" data-close="modal-letter">×</button>
       <div class="letter-stamp">LỜI CHÚC<br>TRONG THIÊN HÀ</div>
-      <div class="letter-to-title" id="letter-to">Lời chúc từ Thiên Hà</div>
+      <div class="letter-to-title" id="letter-to" style="display:none;">Lời chúc từ Thiên Hà</div>
       <div class="letter-content-text" id="letter-message"></div>
+      <div class="letter-date" id="letter-date"></div>
       <div class="letter-from" id="letter-from">— Từ Thiên Hà Lời Chúc</div>
       <button type="button" id="btn-delete-this-wish" class="btn-delete-wish" style="display:none;"
         title="Xóa lời chúc này">
@@ -8330,17 +8348,48 @@
       });
     })();
 
+    /** Định dạng ngày giờ gửi (timestamp ms). Bỏ qua giá trị lỗi cũ trên Supabase. */
+    function formatWishDate(ts) {
+      if (ts == null || ts === '') return '';
+      var n = typeof ts === 'number' ? ts : Number(ts);
+      if (!n || isNaN(n) || n < 1e12) return '';
+      var d = new Date(n);
+      if (isNaN(d.getTime())) return '';
+      try {
+        return d.toLocaleString('vi-VN', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+      } catch (e) {
+        var pad = function (x) { return x < 10 ? '0' + x : String(x); };
+        return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear()
+          + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+      }
+    }
+
     /** Mở thư từ 1 lời chúc trong data (click ngôi sao) */
     function openWishLetter(wish) {
       if (!wish) return;
       currentOpenWishId = wish.id || null;
 
-      document.getElementById('letter-to').textContent = wish.author
-        ? `Từ ${wish.author}`
-        : 'Lời chúc từ Thiên Hà';
+      // Bỏ phần "Từ …"
+      var toEl = document.getElementById('letter-to');
+      if (toEl) {
+        toEl.textContent = '';
+        toEl.style.display = 'none';
+      }
       document.getElementById('letter-message').textContent = wish.text || '';
+      var dateEl = document.getElementById('letter-date');
+      if (dateEl) {
+        var formatted = formatWishDate(wish.createdAt);
+        dateEl.textContent = formatted ? ('📅 ' + formatted) : '';
+      }
       document.getElementById('letter-from').textContent = wish.author
-        ? `— ${wish.author}`
+        ? ('— ' + wish.author)
         : '— Từ Thiên Hà Lời Chúc';
       const stamp = document.querySelector('.letter-stamp');
       if (stamp) stamp.innerHTML = 'LỜI CHÚC<br>TRONG THIÊN HÀ';
